@@ -39,7 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'alumni.apps.AlumniConfig'
+    'alumni.apps.AlumniConfig',
+    'rest_framework',
+    'drf_yasg'
 ]
 
 MIDDLEWARE = [
@@ -81,7 +83,7 @@ DATABASES = {
     'ENGINE': 'django.db.backends.mysql',
     'NAME': 'gradnet',
     'USER': 'root',
-    'PASSWORD': 'lelan2563',
+    'PASSWORD': 'Abc@123',
     'HOST': '' # mặc định localhost
     }
 }

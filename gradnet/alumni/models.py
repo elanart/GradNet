@@ -8,6 +8,7 @@ from datetime import timedelta
 
 
 class Alumni(models.Model):
+
     alumni_id = models.CharField(max_length=255)
     user = models.ForeignKey('User', related_name='alumni', on_delete=models.CASCADE)
 
@@ -70,7 +71,7 @@ class SurveyQuestion(models.Model):
     text = models.CharField(max_length=255)
 
 
-class SurveyAnswer(models.Model):
+class SurveyAnsAwer(models.Model):
     question = models.ForeignKey(SurveyQuestion, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.TextField()
