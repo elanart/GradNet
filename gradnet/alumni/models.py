@@ -3,13 +3,17 @@ from django.contrib.auth.models import AbstractUser
 from cloudinary.models import CloudinaryField
 from django.utils import timezone
 from datetime import timedelta
+from ckeditor.fields import RichTextField
 
 # Create your models here.
 
 
 class Alumni(models.Model):
-    alumni_id = models.CharField(max_length=255)
-    user = models.ForeignKey('User', related_name='alumni', on_delete=models.CASCADE)
+    alumni_id = models.CharField(max_length=255, primary_key=True)
+    name = models.CharField(max_length=100)
+    
+    def __str__(self):
+        return f'{self.alumni_id} - {self.name}'
 
 
 class User(AbstractUser):
@@ -22,17 +26,35 @@ class User(AbstractUser):
     avatar = CloudinaryField(null=True)
     cover = CloudinaryField(null=True)
     role = models.IntegerField(choices=Role.choices, default=Role.ALUMNI)
+    alumni = models.OneToOneField(Alumni, on_delete=models.CASCADE, null=True, blank=True)
+    friends = models.ManyToManyField('self', symmetrical=True, blank=True)
 
     def save(self, *args, **kwargs):
-        if self.role.__eq__(User.Role.LECTURER) and not self.password: # Điều kiện kiểm tra mật khẩu chưa có khi mới tạo tài khoản để thiết lập giá trị mặc định
-            self.set_password('ou@123')  # Mật khẩu sẽ được băm tự động
+        if self.role == User.Role.LECTURER and not self.password: 
+            self.set_password('ou@123')
         super().save()
 
     def check_password_expiry(self):
-        if self.role.__eq__(User.Role.LECTURER):
+        if self.role == User.Role.LECTURER:
             if timezone.now() - self.date_joined > timedelta(hours=24):
                 self.is_active = False
                 self.save()
+                
+    def __str__(self):
+        return f'{self.last_login} {self.first_name}'
+                
+                
+class FriendRequest(models.Model):
+    class Status(models.IntegerChoices):
+        PENDING = 1, "Pending"
+        ACCEPTED = 2, "Accepted"
+        DECLINED = 3, "Declined"
+        EXPIRED = 4, "Expired"
+
+    sender = models.ForeignKey(User, related_name='sent_friend_requests', on_delete=models.CASCADE)
+    recipient = models.ForeignKey(User, related_name='received_friend_requests', on_delete=models.CASCADE)
+    created_date = models.DateTimeField(auto_now_add=True)
+    status = models.IntegerField(choices=Status.choices, default=Status.PENDING)
 
 
 class Group(models.Model):
@@ -53,7 +75,7 @@ class BaseModel(models.Model):
         abstract = True
 
 class Post(BaseModel):
-    content = models.TextField()
+    content = RichTextField()
     
 
 class Image(models.Model):
@@ -99,9 +121,19 @@ class Interaction(BaseModel):
 
 
 class Comment(Interaction):
-    content = models.CharField(max_length=255)
-
+    content = RichTextField()
+    
 
 class Action(Interaction):
+    class Type(models.IntegerChoices):
+        LIKE = 1, "Like"
+        LOVE = 2, "Love"
+        HAHA = 3, "Haha"
+        WOW = 4, "Wow"
+        SAD = 5, "Sad"
+        ANGRY = 6, "Angry"
+        
+    type = models.IntegerField(choices=Type.choices, default=Type.LIKE)
+    
     class Meta:
         unique_together = ('post', 'user')

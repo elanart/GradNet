@@ -11,12 +11,11 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-import pymysql
-pymysql.install_as_MySQLdb()
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-AUTH_USER_MODEL = 'alumni.User'
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -39,7 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'alumni.apps.AlumniConfig'
+    'alumni.apps.AlumniConfig',
+    'ckeditor',
+    'ckeditor_uploader',
+    'rest_framework',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -127,3 +130,14 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# My settings
+import pymysql
+pymysql.install_as_MySQLdb()
+CKEDITOR_UPLOAD_PATH = "ckeditors/images/"
+AUTH_USER_MODEL = 'alumni.User'
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 
+    'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 2
+}
