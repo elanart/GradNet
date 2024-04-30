@@ -17,12 +17,18 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
         queryset = User.objects.filter(is_active=True)
         return Response(serializers.UserSerializer(queryset, many=True).data)
     
-    # def update(self, request, pk):
+    def update(self, request, pk):
+        user = request.user
+        for k,v in request.data.items():
+                setattr(user, k, v) #user.k = v
+        user.save()
+        return Response(serializers.UserSerializer(request.user).data)
+    
+    # def partial_update(self, request, pk):
     #     user = request.user
-    #     for k,v in request.data.items():
-    #             setattr(user, k, v) #user.k = v
+    #     user.password = request.data.get('password')
     #     user.save()
-    #     return Response(serializers.UserSerializer(request.user).data)
+        
     
     # def get_permissions(self):
     #     if self.action in ['current_user']:

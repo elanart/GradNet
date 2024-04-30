@@ -74,19 +74,7 @@ class Image(models.Model):
     image = CloudinaryField()
 
 
-class Survey(BaseModel):
-    title = models.CharField(max_length=100)
-    
-    
-class SurveyQuestion(models.Model):
-    survey = models.ForeignKey(Survey, on_delete=models.CASCADE)
-    text = models.CharField(max_length=255)
-
-
-class SurveyAnswer(models.Model):
-    question = models.ForeignKey(SurveyQuestion, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    text = models.TextField()
+# Survey model: https://pypi.org/project/django-form-surveys/#features
 
 
 class Invitation(BaseModel):

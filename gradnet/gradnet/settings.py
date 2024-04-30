@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'oauth2_provider',
+    'djf_surveys',
 ]
 
 MIDDLEWARE = [
@@ -69,6 +70,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'djf_surveys.context_processors.surveys_context',
             ],
         },
     },
@@ -147,6 +149,10 @@ REST_FRAMEWORK = {
     'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
     )
 }
+
+CLIENT_ID = 'EIFOWs5h8FPJPluYFvXIQdcLvAWfjn8AHXwrW3AG'
+CLIENT_SECRET = 'o3YdzEnDROX2W25N15Ar8PDdOxwYHALSfrxPEcuCHRDBXPHPPkAm3bDUrbawn5VE4FGEQaLyP8zrMGJdasYL9ZFrl77jQzK64sxB3kwevXMB5IWJLmsnAHhigeJJkJQL'
+
 import cloudinary
           
 cloudinary.config( 
@@ -154,3 +160,5 @@ cloudinary.config(
   api_key = "595946198281489", 
   api_secret = "hd1cRj177f0HVAQ-vSeqG_yT9Y0" 
 )
+
+STATIC_ROOT = f"{BASE_DIR}/alumni/static/"

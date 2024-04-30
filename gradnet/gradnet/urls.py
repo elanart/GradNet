@@ -35,6 +35,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('', include('alumni.urls')),
     path('admin/', admin.site.urls),
+    path('surveys/', include('djf_surveys.urls')),
     path('o/',include('oauth2_provider.urls', namespace='oauth2_provider')),
     re_path(r'^ckeditor/', include('ckeditor_uploader.urls')),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
