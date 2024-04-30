@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'ckeditor_uploader',
     'rest_framework',
     'drf_yasg',
+    'oauth2_provider',
 ]
 
 MIDDLEWARE = [
@@ -134,10 +135,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # My settings
 import pymysql
 pymysql.install_as_MySQLdb()
+
 CKEDITOR_UPLOAD_PATH = "ckeditors/images/"
+
 AUTH_USER_MODEL = 'alumni.User'
 REST_FRAMEWORK = {
-    'DEFAULT_PAGINATION_CLASS': 
-    'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 2
+    # 'DEFAULT_PAGINATION_CLASS': 
+    # 'rest_framework.pagination.PageNumberPagination',
+    # 'PAGE_SIZE': 2,
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+    )
 }
+import cloudinary
+          
+cloudinary.config( 
+  cloud_name = "djga3njzi", 
+  api_key = "595946198281489", 
+  api_secret = "hd1cRj177f0HVAQ-vSeqG_yT9Y0" 
+)

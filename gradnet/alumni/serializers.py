@@ -2,12 +2,6 @@ from rest_framework import serializers
 from alumni.models import *
 
 
-class AlumniSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Alumni
-        fields = ['alumni_id', 'name']
-
-
 class ItemSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         req = super().to_representation(instance)
@@ -16,9 +10,7 @@ class ItemSerializer(serializers.ModelSerializer):
         return req
 
 
-class UserSerializer(serializers.ModelSerializer):
-    alumni = AlumniSerializer()
-    
+class UserSerializer(serializers.ModelSerializer):    
     def to_representation(self, instance):
         req = super().to_representation(instance)
         if instance.avatar:
@@ -29,8 +21,9 @@ class UserSerializer(serializers.ModelSerializer):
         
         return req
     
-    def create(self, validated_data):
+    def create(self, validated_data):        
         data = validated_data.copy()
+        
         user = User(**data)
         user.set_password(user.password)
         user.save()
@@ -39,7 +32,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'username', 'password', 'email', 'avatar', 'cover', 'alumni']
+        fields = ['id', 'first_name', 'last_name', 'username', 'password', 'email', 'avatar', 'cover', 'alumni_id']
         extra_kwargs = {
             'password': {
                 'write_only': True

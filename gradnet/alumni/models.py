@@ -8,16 +8,7 @@ from ckeditor.fields import RichTextField
 # Create your models here.
 
 
-class Alumni(models.Model):
-    alumni_id = models.CharField(max_length=255, primary_key=True)
-    name = models.CharField(max_length=100)
-    
-    def __str__(self):
-        return f'{self.alumni_id} - {self.name}'
-
-
 class User(AbstractUser):
-
     class Role(models.IntegerChoices):
         ADMIN = 1, "Admin"
         LECTURER = 2, "Lecturer"
@@ -26,8 +17,8 @@ class User(AbstractUser):
     avatar = CloudinaryField(null=True)
     cover = CloudinaryField(null=True)
     role = models.IntegerField(choices=Role.choices, default=Role.ALUMNI)
-    alumni = models.OneToOneField(Alumni, on_delete=models.CASCADE, null=True, blank=True)
     friends = models.ManyToManyField('self', symmetrical=True, blank=True)
+    alumni_id = models.CharField(max_length=20, null=True)
 
     def save(self, *args, **kwargs):
         if self.role == User.Role.LECTURER and not self.password: 
@@ -41,7 +32,7 @@ class User(AbstractUser):
                 self.save()
                 
     def __str__(self):
-        return f'{self.last_login} {self.first_name}'
+        return f'{self.last_name} {self.first_name}'
                 
                 
 class FriendRequest(models.Model):
@@ -58,7 +49,7 @@ class FriendRequest(models.Model):
 
 
 class Group(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=50)
     member = models.ManyToManyField(User)
     
     def __str__(self):
@@ -84,7 +75,7 @@ class Image(models.Model):
 
 
 class Survey(BaseModel):
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=100)
     
     
 class SurveyQuestion(models.Model):
@@ -105,7 +96,7 @@ class Invitation(BaseModel):
         DECLINED = 3, "Declined"
         EXPIRED = 4, "Expired"
     
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=100)
     content = models.TextField()
     location = models.CharField(max_length=255)
     status = models.IntegerField(choices=Status.choices, default=Status.PENDING)
