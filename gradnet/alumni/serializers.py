@@ -38,3 +38,9 @@ class UserSerializer(serializers.ModelSerializer):
                 'write_only': True
             }
         }
+        
+
+class FriendRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FriendRequest
+        fields = ['sender', 'recipient', 'status']

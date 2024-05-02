@@ -40,7 +40,6 @@ class FriendRequest(models.Model):
         PENDING = 1, "Pending"
         ACCEPTED = 2, "Accepted"
         DECLINED = 3, "Declined"
-        EXPIRED = 4, "Expired"
 
     sender = models.ForeignKey(User, related_name='sent_friend_requests', on_delete=models.CASCADE)
     recipient = models.ForeignKey(User, related_name='received_friend_requests', on_delete=models.CASCADE)
