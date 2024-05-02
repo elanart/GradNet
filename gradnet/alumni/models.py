@@ -36,15 +36,9 @@ class User(AbstractUser):
                 
                 
 class FriendRequest(models.Model):
-    class Status(models.IntegerChoices):
-        PENDING = 1, "Pending"
-        ACCEPTED = 2, "Accepted"
-        DECLINED = 3, "Declined"
-
     sender = models.ForeignKey(User, related_name='sent_friend_requests', on_delete=models.CASCADE)
     recipient = models.ForeignKey(User, related_name='received_friend_requests', on_delete=models.CASCADE)
     created_date = models.DateTimeField(auto_now_add=True)
-    status = models.IntegerField(choices=Status.choices, default=Status.PENDING)
 
 
 class Group(models.Model):

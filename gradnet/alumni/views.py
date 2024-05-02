@@ -4,9 +4,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets, generics, status, parsers, permissions
 from alumni.models import *
 from alumni import serializers
-from oauth2_provider.views import TokenView
-from oauth2_provider.models import Application
-from django.contrib.auth import authenticate
+from django.core.exceptions import ObjectDoesNotExist
 
 # Create your views here.
     
@@ -31,14 +29,26 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
         return Response(serializers.UserSerializer(request.user).data)
     
     @action(methods=['post'], url_path='add-friend', detail=True)
-    def add_friend(self, request, pk):
-        friend_request, created = FriendRequest.objects.get_or_create(sender=request.user, recipient=self.get_object())
-        if not created:
-            if friend_request.status == FriendRequest.Status.PENDING:
-                friend_request.status = FriendRequest.Status.DECLINED
-                friend_request.save()
-                return Response(serializers.FriendRequestSerializer(friend_request).data, status=status.HTTP_200_OK)
-            else:
-                friend_request.status = FriendRequest.Status.PENDING
-                friend_request.save()
-        return Response(serializers.FriendRequestSerializer(friend_request).data, status=status.HTTP_201_CREATED)
+    def send_friend_request(self, request, pk=None):
+        sender = request.user
+        try:
+            recipient = User.objects.get(pk=pk)
+        except ObjectDoesNotExist:
+            return Response({"error": "Người nhận không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
+
+        if sender == recipient:
+            return Response({"error": "Bạn không thể gửi lời mời kết bạn cho chính mình."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if recipient in sender.friends.all():
+            return Response({"error": "Người này đã là bạn của bạn."}, status=status.HTTP_400_BAD_REQUEST)
+
+        friend_request, created = FriendRequest.objects.get_or_create(
+            sender=sender,
+            recipient=recipient
+        )
+
+        if created:
+            return Response(serializers.UserSerializer(sender).data, status=status.HTTP_201_CREATED)
+        else:
+            friend_request.delete()
+            return Response(serializers.UserSerializer(sender).data, status=status.HTTP_200_OK)
