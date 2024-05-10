@@ -39,8 +39,8 @@ class UserSerializer(serializers.ModelSerializer):
             }
         }
         
-
-class FriendRequestSerializer(serializers.ModelSerializer):
+        
+class PostSerializer(serializers.ModelSerializer):
     class Meta:
-        model = FriendRequest
-        fields = ['sender', 'recipient', 'status']
+        model = Post
+        fields = '__all__'

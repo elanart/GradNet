@@ -15,7 +15,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
     parser_classes = [parsers.MultiPartParser, ]
     
     def get_permissions(self):
-        if self.action in ['current_user']:
+        if self.action in ['current_user', 'my_posts', 'get_posts', 'create_post']:
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
         
@@ -28,27 +28,27 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
             user.save()
         return Response(serializers.UserSerializer(request.user).data)
     
-    @action(methods=['post'], url_path='add-friend', detail=True)
-    def send_friend_request(self, request, pk=None):
-        sender = request.user
-        try:
-            recipient = User.objects.get(pk=pk)
-        except ObjectDoesNotExist:
-            return Response({"error": "Người nhận không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
+    @action(methods=['get'], url_path='current-user/posts', detail=False)
+    def my_posts(self, request):
+        user = request.user
+        posts = Post.objects.filter(user=user)
+        return Response(serializers.PostSerializer(posts, many=True).data)
+    
+    @action(methods=['get'], url_path='posts', detail=True)
+    def get_posts(self, request, pk):
+        posts = self.get_object().post_set.all()
+            
+        return Response(serializers.PostSerializer(posts, many=True).data)
+        
+    @action(methods=['post'], url_path='current-user/post', detail=False)
+    def create_post(self, request):
+        user = request.user
+        if request.method.__eq__('POST'):
+            posts = Post.objects.create(user=user, content=request.data.get('content'))
+            
+        return Response(serializers.PostSerializer(posts).data, status=status.HTTP_201_CREATED)
+    
 
-        if sender == recipient:
-            return Response({"error": "Bạn không thể gửi lời mời kết bạn cho chính mình."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if recipient in sender.friends.all():
-            return Response({"error": "Người này đã là bạn của bạn."}, status=status.HTTP_400_BAD_REQUEST)
-
-        friend_request, created = FriendRequest.objects.get_or_create(
-            sender=sender,
-            recipient=recipient
-        )
-
-        if created:
-            return Response(serializers.UserSerializer(sender).data, status=status.HTTP_201_CREATED)
-        else:
-            friend_request.delete()
-            return Response(serializers.UserSerializer(sender).data, status=status.HTTP_200_OK)
+class PostViewSet(viewsets.ViewSet, generics.CreateAPIView):
+    queryset = Post.objects.filter(is_active=True)
+    serializer_class = serializers.PostSerializer

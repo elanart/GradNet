@@ -9,36 +9,23 @@ from ckeditor.fields import RichTextField
 
 
 class User(AbstractUser):
-    class Role(models.IntegerChoices):
-        ADMIN = 1, "Admin"
-        LECTURER = 2, "Lecturer"
-        ALUMNI = 3, "Alumni"
-
     avatar = CloudinaryField(null=True)
     cover = CloudinaryField(null=True)
-    role = models.IntegerField(choices=Role.choices, default=Role.ALUMNI)
-    friends = models.ManyToManyField('self', symmetrical=True, blank=True)
     alumni_id = models.CharField(max_length=20, null=True)
 
     def save(self, *args, **kwargs):
-        if self.role == User.Role.LECTURER and not self.password: 
+        if self.is_staff and not self.is_superuser and not self.password: 
             self.set_password('ou@123')
         super().save()
 
     def check_password_expiry(self):
-        if self.role == User.Role.LECTURER:
+        if self.is_staff:
             if timezone.now() - self.date_joined > timedelta(hours=24):
                 self.is_active = False
                 self.save()
                 
     def __str__(self):
         return f'{self.last_name} {self.first_name}'
-                
-                
-class FriendRequest(models.Model):
-    sender = models.ForeignKey(User, related_name='sent_friend_requests', on_delete=models.CASCADE)
-    recipient = models.ForeignKey(User, related_name='received_friend_requests', on_delete=models.CASCADE)
-    created_date = models.DateTimeField(auto_now_add=True)
 
 
 class Group(models.Model):
@@ -60,11 +47,6 @@ class BaseModel(models.Model):
 
 class Post(BaseModel):
     content = RichTextField()
-    
-
-class Image(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    image = CloudinaryField()
 
 
 # Survey model: https://pypi.org/project/django-form-surveys/#features
