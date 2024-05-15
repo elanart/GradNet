@@ -31,6 +31,7 @@ class User(AbstractUser):
 class Group(models.Model):
     name = models.CharField(max_length=50)
     member = models.ManyToManyField(User)
+    is_active = models.BooleanField(default=True)
     
     def __str__(self):
         return self.name
@@ -47,8 +48,21 @@ class BaseModel(models.Model):
 
 class Post(BaseModel):
     content = RichTextField()
+    
+    
+class Media(models.Model):
+    class MEDIA_TYPES(models.IntegerChoices):
+        IMAGE = 1, 'Image',
+        VIDEO = 2, 'Video',
+    type = models.IntegerField(choices=MEDIA_TYPES)
+    file = CloudinaryField('gradnet_media')
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='post_media', null=True, blank=True)
+    invitation = models.ForeignKey('Invitation', on_delete=models.CASCADE, related_name='invitation_media', null=True, blank=True)
 
-
+    class Meta:
+        verbose_name_plural = "Media"
+    
+    
 # Survey model: https://pypi.org/project/django-form-surveys/#features
 
 
