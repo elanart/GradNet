@@ -55,7 +55,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
 
 
 class PostViewSet(viewsets.ViewSet, 
-                  generics.ListCreateAPIView,
+                  generics.ListAPIView,
                   generics.RetrieveDestroyAPIView):
     queryset = Post.objects.filter(is_active=True).order_by('-created_date').all()
     serializer_class = serializers.PostSerializer
@@ -79,6 +79,41 @@ class PostViewSet(viewsets.ViewSet,
             if user_id:
                 queryset = queryset.filter(user_id=user_id)
         return queryset
+    
+    def create(self, request):
+        content = request.data.get('content')
+        user = request.user
+        
+        # Tạo bài post
+        post = Post.objects.create(user=user, content=content)
+        
+        # Xử lý các tệp media
+        media_image_request = request.FILES.getlist('media_image')
+        media_video_request = request.FILES.getlist('media_video')
+        
+        media_list = []
+        
+        # Thêm các tệp hình ảnh vào danh sách
+        for media_file in media_image_request:
+            media = Media(file=media_file, type=Media.MEDIA_TYPES.IMAGE, post=post)
+            media.save()
+            media_list.append(media)
+        
+        # Thêm các tệp video vào danh sách
+        for media_file in media_video_request:
+            media = Media(file=media_file, type=Media.MEDIA_TYPES.VIDEO, post=post)
+            media.save()
+            media_list.append(media)
+            
+        media_image = [media for media in media_list if media.type == Media.MEDIA_TYPES.IMAGE]
+        media_video = [media for media in media_list if media.type == Media.MEDIA_TYPES.VIDEO]
+        
+        # Tuần tự hóa dữ liệu bài post và các media liên quan
+        response_data = serializers.PostSerializer(post).data
+        response_data['media_image'] = serializers.MediaSerializer(media_image, many=True).data
+        response_data['media_video'] = serializers.MediaSerializer(media_video, many=True).data
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)      
 
     def partial_update(self, request, pk):
         post = self.get_object()

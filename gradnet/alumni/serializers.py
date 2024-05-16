@@ -61,35 +61,11 @@ class MediaSerializer(serializers.ModelSerializer):
         fields = ['id', 'type', 'file']
 
 
-# class CommentSerializer(serializers.ModelSerializer):
-#     user = UserInteractionSerializer()
-    
-#     class Meta:
-#         model = Comment
-#         fields = ['id', 'content', 'created_date', 'updated_date', 'user']
-
-
-# # class ActionSerializer(serializers.ModelSerializer):
-# #     class Meta:
-# #         model = Action
-# #         fields = ['type', 'created_date', 'updated_date']
-
-
 class PostSerializer(serializers.ModelSerializer):
-    user = UserInteractionSerializer(read_only=True)
-    post_media = MediaSerializer(many=True, required=False)
-    
-    def create(self, validated_data):
-        images_data = self.context['request'].FILES
-        validated_data['user'] = self.context['request'].user
-        post = Post.objects.create(**validated_data)
-        for image_data in images_data.values():
-            Media.objects.create(post=post, file=image_data)
-        return post
     
     class Meta:
         model = Post
-        fields = ['id', 'content', 'created_date', 'updated_date', 'user', 'post_media']
+        fields = ['id', 'content', 'created_date', 'updated_date', 'user']
 
 
 class DetailPostSerializer(serializers.ModelSerializer):
