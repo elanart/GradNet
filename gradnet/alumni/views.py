@@ -44,14 +44,6 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
                 return Response({"error": "Xác nhận mật khẩu không khớp!"})
         
         return Response({"error": "Mật khẩu hiện tại không chính xác!"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    # @action(methods=['get'], url_path='current-user/posts', detail=False)
-    # def list_posts(self, request):
-    #     user = request.user
-        
-    #     if request.method.__eq__('GET'):
-    #         posts = Post.objects.filter(user=user)
-    #         return Response(serializers.PostSerializer(posts, many=True).data)      
 
 
 class PostViewSet(viewsets.ViewSet, 
@@ -67,7 +59,7 @@ class PostViewSet(viewsets.ViewSet,
         if self.action in ['partial_update']:
             return [perms.PostOwner()]
         elif self.action in ['destroy']:
-            return [perms.PostOwner(), permissions.IsAdminUser()]
+            return [perms.PostOwner() or permissions.IsAdminUser()]
         return self.permission_classes
     
     def get_queryset(self):
@@ -117,16 +109,93 @@ class PostViewSet(viewsets.ViewSet,
 
     def partial_update(self, request, pk):
         post = self.get_object()
+        
+        # Cập nhật nội dung bài viết
         for k, v in request.data.items():
-            setattr(post, k, v)
+            if k not in ['media_image', 'media_video', 'delete_media_ids']:
+                setattr(post, k, v)
+            
         post.save()
-        return Response(serializers.PostSerializer(post).data)
+        
+        # Xử lý xóa các media theo ID
+        delete_media_ids = request.data.get('delete_media_ids', "")
+        if delete_media_ids:
+            delete_media_ids_list = [int(id.strip()) for id in delete_media_ids.split(",")]
+            Media.objects.filter(id__in=delete_media_ids_list, post=post).delete()
+        
+        # Xử lý thêm các media mới
+        media_image_request = request.FILES.getlist('media_image')
+        media_video_request = request.FILES.getlist('media_video')
+        
+        for media_file in media_image_request:
+            Media.objects.create(file=media_file, type=Media.MEDIA_TYPES.IMAGE, post=post)
+                
+        for media_file in media_video_request:
+            Media.objects.create(file=media_file, type=Media.MEDIA_TYPES.VIDEO, post=post)
+
+        response_data = serializers.PostSerializer(post).data
+        response_data['media_image'] = serializers.MediaSerializer(post.post_media.filter(type=Media.MEDIA_TYPES.IMAGE), many=True).data
+        response_data['media_video'] = serializers.MediaSerializer(post.post_media.filter(type=Media.MEDIA_TYPES.VIDEO), many=True).data
+        
+        return Response(response_data)
     
     
-# class GroupViewSet(viewsets.ViewSet, generics.ListAPIView):
-#     queryset = Group.objects.all()
-#     serializer_class = serializers.GroupSerializer
+class InvitationViewSet(viewsets.ViewSet,
+                        generics.ListAPIView,
+                        generics.RetrieveDestroyAPIView):
+    queryset = Invitation.objects.filter(is_active=True).order_by('-created_date').all()
+    serializer_class = serializers.InvitationSerializer
+    permission_classes = [permissions.IsAdminUser]
     
-#     @action(methods=['get'], url_path='groups', detail=False)
-#     def get_group(self, request):
-#         pass
+    def create(self, request):
+        data = request.data
+        user = request.user
+        
+        title = data.get('title')
+        content = data.get('content')
+        location = data.get('location')
+        recipients_users_ids = data.get('recipients_users', [])
+        recipients_groups_ids = data.get('recipients_groups', [])
+        
+        # Tạo lời mời (invitation)
+        invitation = Invitation.objects.create(user=user, title=title, content=content, location=location)
+        
+        # Xử lý recipients_users
+        if recipients_users_ids:
+            recipients_users_lists = [int(id.strip()) for id in recipients_users_ids.split(",") if id.strip().isdigit()]
+            users = User.objects.filter(id__in=recipients_users_lists)
+            invitation.recipients_users.set(users)
+        
+        # Xử lý recipients_groups
+        if recipients_groups_ids:
+            recipients_groups_lists = [int(id.strip()) for id in recipients_groups_ids.split(",") if id.strip().isdigit()]
+            groups = Group.objects.filter(id__in=recipients_groups_lists)
+            invitation.recipients_groups.set(groups)
+    
+        # Xử lý các tệp media
+        media_image_request = request.FILES.getlist('media_image')
+        media_video_request = request.FILES.getlist('media_video')
+        
+        media_list = []
+        
+        # Thêm các tệp hình ảnh vào danh sách
+        for media_file in media_image_request:
+            media = Media(file=media_file, type=Media.MEDIA_TYPES.IMAGE, invitation=invitation)
+            media.save()
+            media_list.append(media)
+        
+        # Thêm các tệp video vào danh sách
+        for media_file in media_video_request:
+            media = Media(file=media_file, type=Media.MEDIA_TYPES.VIDEO, invitation=invitation)
+            media.save()
+            media_list.append(media)
+            
+        media_image = [media for media in media_list if media.type == Media.MEDIA_TYPES.IMAGE]
+        media_video = [media for media in media_list if media.type == Media.MEDIA_TYPES.VIDEO]
+        
+        # Tuần tự hóa dữ liệu invitation và các media liên quan
+        response_data = serializers.InvitationSerializer(invitation).data
+        response_data['media_image'] = serializers.MediaSerializer(media_image, many=True).data
+        response_data['media_video'] = serializers.MediaSerializer(media_video, many=True).data
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)

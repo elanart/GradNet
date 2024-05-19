@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from alumni.models import *
-
+from djf_surveys.models import Survey
 
 class ItemSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
@@ -81,9 +81,8 @@ class DetailPostSerializer(serializers.ModelSerializer):
         fields = PostSerializer.Meta.fields + ['action']
         
         
-# class GroupSerializer(serializers.ModelSerializer):
-#     member = serializers.StringRelatedField(many=True)
+class InvitationSerializer(serializers.ModelSerializer):
 
-#     class Meta:
-#         model = Group
-#         fields = ['id', 'name', 'member']
+    class Meta:
+        model = Invitation
+        fields = '__all__'

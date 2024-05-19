@@ -54,7 +54,7 @@ class Media(models.Model):
     class MEDIA_TYPES(models.IntegerChoices):
         IMAGE = 1, 'Image',
         VIDEO = 2, 'Video',
-    type = models.IntegerField(choices=MEDIA_TYPES)
+    type = models.IntegerField(choices=MEDIA_TYPES.choices)
     file = CloudinaryField('gradnet_media')
     post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='post_media', null=True, blank=True)
     invitation = models.ForeignKey('Invitation', on_delete=models.CASCADE, related_name='invitation_media', null=True, blank=True)
@@ -66,19 +66,12 @@ class Media(models.Model):
 # Survey model: https://pypi.org/project/django-form-surveys/#features
 
 
-class Invitation(BaseModel):
-    class Status(models.IntegerChoices):
-        PENDING = 1, "Pending"
-        ACCEPTED = 2, "Accepted"
-        DECLINED = 3, "Declined"
-        EXPIRED = 4, "Expired"
-    
+class Invitation(BaseModel):   
     title = models.CharField(max_length=100)
     content = models.TextField()
     location = models.CharField(max_length=255)
-    status = models.IntegerField(choices=Status.choices, default=Status.PENDING)
     recipients_users = models.ManyToManyField(User, related_name='recipients_users')
-    recipients_groups = models.ManyToManyField(Group)
+    recipients_groups = models.ManyToManyField(Group, related_name='recipients_groups')
 
 
 class Interaction(BaseModel):
