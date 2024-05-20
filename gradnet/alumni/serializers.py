@@ -40,7 +40,7 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
 
-class UserInteractionSerializer(serializers.ModelSerializer):
+class ShortUserSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField()
 
     class Meta:
@@ -65,10 +65,11 @@ class PostSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Post
-        fields = ['id', 'created_date', 'updated_date', 'user']
+        fields = ['id', 'created_date', 'updated_date']
 
 
 class ActionSerializer(serializers.ModelSerializer):
+    user = ShortUserSerializer(read_only=True)
     class Meta:
         model = Action
         fields = ['id', 'type', 'created_date', 'updated_date', 'user']
@@ -76,7 +77,7 @@ class ActionSerializer(serializers.ModelSerializer):
         
         
 class CommentSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    user = ShortUserSerializer(read_only=True)
     
     class Meta:
         model = Comment
@@ -84,16 +85,8 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class AuthenticatedDetailPostSerializer(serializers.ModelSerializer):
-    action = serializers.SerializerMethodField()
-    comments = CommentSerializer(many=True, read_only=True)
+    user = ShortUserSerializer(read_only=True)
     media = serializers.SerializerMethodField()
-
-    def get_action(self, post):
-        request = self.context.get('request')
-        if request:
-            user_actions = post.action_set.filter(user=request.user, is_active=True)
-            return ActionSerializer(user_actions, many=True).data
-        return []
         
     def get_media(self, post):
         media_objects = post.post_media.all()
@@ -101,13 +94,20 @@ class AuthenticatedDetailPostSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Post
-        fields = PostSerializer.Meta.fields + ['content', 'action', 'comments', 'media']
+        fields = PostSerializer.Meta.fields + ['content','user', 'media']
         
         
 class InvitationSerializer(serializers.ModelSerializer):
+    recipients_users = ShortUserSerializer(many=True, read_only=True)
+    # recipients_groups = GroupSerializer(many=True, read_only=True)
+    media = serializers.SerializerMethodField()
 
+    def get_media(self, invitation):
+        media_objects = invitation.invitation_media.all()
+        return MediaSerializer(media_objects, many=True).data
+    
     class Meta:
         model = Invitation
-        fields = '__all__'
+        fields = ['id', 'title', 'content', 'location', 'recipients_users', 'recipients_groups', 'media']
         
         

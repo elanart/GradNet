@@ -48,6 +48,7 @@ class BaseModel(models.Model):
 
 class Post(BaseModel):
     content = RichTextField()
+    allow_comments = models.BooleanField(default=True)
     
     
 class Media(models.Model):
@@ -97,4 +98,4 @@ class Action(Interaction):
     type = models.IntegerField(choices=Type.choices, default=Type.LIKE)
     
     class Meta:
-        unique_together = ('post', 'user')
+        unique_together = ('post', 'user', 'type')

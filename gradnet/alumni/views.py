@@ -119,6 +119,45 @@ class PostViewSet(viewsets.ViewSet,
         response_data = serializers.AuthenticatedDetailPostSerializer(post, context={'request': request}).data
         return Response(response_data)
     
+    @action(methods=['get'], url_path='get-comments', detail=True)
+    def get_comments(self, request, pk):
+        post = self.get_object()
+        comments = post.comment_set.select_related('user').all()
+        paginator = paginators.CommentPaginator()
+        
+        page = paginator.paginate_queryset(comments, request)
+        if page is not None:
+            serializer = serializers.CommentSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        return Response(serializers.CommentSerializer(comments, many=True).data)
+    
+    @action(methods=['post'], url_path='add-comment', detail=True)
+    def add_comment(self, request, pk):
+        post = self.get_object()
+        c = post.comment_set.create(user=request.user, content=request.data.get('content'))
+
+        return Response(serializers.CommentSerializer(c).data,
+                        status=status.HTTP_201_CREATED)
+        
+    @action(methods=['get'], url_path='get-actions', detail=True)
+    def get_actions(self, request, pk):
+        post = self.get_object()
+        actions = post.action_set.select_related('user').all()
+        
+        return Response(serializers.ActionSerializer(actions, many=True).data)
+        
+    @action(methods=['post'], url_path='add-action', detail=True)
+    def add_action(self, request, pk):
+        post = self.get_object()
+        action, created = Action.objects.get_or_create(user=request.user, post=post, type=request.data.get('type'))
+        
+        if not created:
+            action.is_active = not action.is_active
+            action.save()
+        return Response(serializers.ActionSerializer(action).data,
+                        status=status.HTTP_201_CREATED)
+    
     
 class InvitationViewSet(viewsets.ViewSet,
                         generics.ListAPIView,
@@ -142,13 +181,13 @@ class InvitationViewSet(viewsets.ViewSet,
         
         # Xử lý recipients_users
         if recipients_users_ids:
-            recipients_users_lists = [int(id.strip()) for id in recipients_users_ids]
+            recipients_users_lists = [int(id.strip()) for id in recipients_users_ids.split(",") if id.strip().isdigit()]
             users = User.objects.filter(id__in=recipients_users_lists)
             invitation.recipients_users.set(users)
         
         # Xử lý recipients_groups
         if recipients_groups_ids:
-            recipients_groups_lists = [int(id.strip()) for id in recipients_groups_ids]
+            recipients_groups_lists = [int(id.strip()) for id in recipients_groups_ids.split(",") if id.strip().isdigit()]
             groups = Group.objects.filter(id__in=recipients_groups_lists)
             invitation.recipients_groups.set(groups)
     
@@ -156,26 +195,37 @@ class InvitationViewSet(viewsets.ViewSet,
         media_image_request = request.FILES.getlist('media_image')
         media_video_request = request.FILES.getlist('media_video')
         
-        media_list = []
-        
-        # Thêm các tệp hình ảnh vào danh sách
         for media_file in media_image_request:
-            media = Media(file=media_file, type=Media.MEDIA_TYPES.IMAGE, invitation=invitation)
-            media.save()
-            media_list.append(media)
+            Media.objects.create(file=media_file, type=Media.MEDIA_TYPES.IMAGE, invitation=invitation)
         
-        # Thêm các tệp video vào danh sách
         for media_file in media_video_request:
-            media = Media(file=media_file, type=Media.MEDIA_TYPES.VIDEO, invitation=invitation)
-            media.save()
-            media_list.append(media)
-            
-        media_image = [media for media in media_list if media.type == Media.MEDIA_TYPES.IMAGE]
-        media_video = [media for media in media_list if media.type == Media.MEDIA_TYPES.VIDEO]
+            Media.objects.create(file=media_file, type=Media.MEDIA_TYPES.VIDEO, invitation=invitation)
         
         # Tuần tự hóa dữ liệu invitation và các media liên quan
-        response_data = serializers.InvitationSerializer(invitation).data
-        response_data['media_image'] = serializers.MediaSerializer(media_image, many=True).data
-        response_data['media_video'] = serializers.MediaSerializer(media_video, many=True).data
+        response_data = serializers.InvitationSerializer(invitation, context={'request': request}).data
+        return Response(response_data, status=status.HTTP_201_CREATED)         
+
+    def partial_update(self, request, pk):
+        invitation = self.get_object()
         
-        return Response(response_data, status=status.HTTP_201_CREATED)
+        for k, v in request.data.items():
+            if k not in ['media_image', 'media_video', 'delete_media_ids']:
+                setattr(invitation, k, v)
+        invitation.save()
+        
+        delete_media_ids = request.data.get('delete_media_ids', "")
+        if delete_media_ids:
+            delete_media_ids_list = [int(id.strip()) for id in delete_media_ids.split(",")]
+            Media.objects.filter(id__in=delete_media_ids_list, invitation=invitation).delete()
+        
+        media_image_request = request.FILES.getlist('media_image')
+        media_video_request = request.FILES.getlist('media_video')
+        
+        for media_file in media_image_request:
+            Media.objects.create(file=media_file, type=Media.MEDIA_TYPES.IMAGE, invitation=invitation)
+                
+        for media_file in media_video_request:
+            Media.objects.create(file=media_file, type=Media.MEDIA_TYPES.VIDEO, invitation=invitation)
+
+        response_data = serializers.InvitationSerializer(invitation, context={'request': request}).data
+        return Response(response_data)
