@@ -65,20 +65,43 @@ class PostSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Post
+        fields = ['id', 'created_date', 'updated_date', 'user']
+
+
+class ActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Action
+        fields = ['id', 'type', 'created_date', 'updated_date', 'user']
+
+        
+        
+class CommentSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    
+    class Meta:
+        model = Comment
         fields = ['id', 'content', 'created_date', 'updated_date', 'user']
 
 
-class DetailPostSerializer(serializers.ModelSerializer):
+class AuthenticatedDetailPostSerializer(serializers.ModelSerializer):
     action = serializers.SerializerMethodField()
+    comments = CommentSerializer(many=True, read_only=True)
+    media = serializers.SerializerMethodField()
 
     def get_action(self, post):
         request = self.context.get('request')
-        if request.user.is_authenticated:
-            return post.action_set.filter(is_active=True).exists()
+        if request:
+            user_actions = post.action_set.filter(user=request.user, is_active=True)
+            return ActionSerializer(user_actions, many=True).data
+        return []
+        
+    def get_media(self, post):
+        media_objects = post.post_media.all()
+        return MediaSerializer(media_objects, many=True).data
     
     class Meta:
-        model = PostSerializer.Meta.model
-        fields = PostSerializer.Meta.fields + ['action']
+        model = Post
+        fields = PostSerializer.Meta.fields + ['content', 'action', 'comments', 'media']
         
         
 class InvitationSerializer(serializers.ModelSerializer):
@@ -86,3 +109,5 @@ class InvitationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invitation
         fields = '__all__'
+        
+        

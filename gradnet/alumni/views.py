@@ -50,7 +50,6 @@ class PostViewSet(viewsets.ViewSet,
                   generics.ListAPIView,
                   generics.RetrieveDestroyAPIView):
     queryset = Post.objects.filter(is_active=True).order_by('-created_date').all()
-    serializer_class = serializers.PostSerializer
     parser_classes = [parsers.MultiPartParser, ]
     permission_classes = [permissions.IsAuthenticated()]
     pagination_class = paginators.PostPaginator
@@ -61,6 +60,11 @@ class PostViewSet(viewsets.ViewSet,
         elif self.action in ['destroy']:
             return [perms.PostOwner() or permissions.IsAdminUser()]
         return self.permission_classes
+    
+    def get_serializer_class(self):
+        if self.action.__eq__('retrieve'):
+            return serializers.AuthenticatedDetailPostSerializer
+        return serializers.PostSerializer
     
     def get_queryset(self):
         queryset = self.queryset
@@ -76,54 +80,33 @@ class PostViewSet(viewsets.ViewSet,
         content = request.data.get('content')
         user = request.user
         
-        # Tạo bài post
         post = Post.objects.create(user=user, content=content)
         
-        # Xử lý các tệp media
         media_image_request = request.FILES.getlist('media_image')
         media_video_request = request.FILES.getlist('media_video')
         
-        media_list = []
-        
-        # Thêm các tệp hình ảnh vào danh sách
         for media_file in media_image_request:
-            media = Media(file=media_file, type=Media.MEDIA_TYPES.IMAGE, post=post)
-            media.save()
-            media_list.append(media)
+            Media.objects.create(file=media_file, type=Media.MEDIA_TYPES.IMAGE, post=post)
         
-        # Thêm các tệp video vào danh sách
         for media_file in media_video_request:
-            media = Media(file=media_file, type=Media.MEDIA_TYPES.VIDEO, post=post)
-            media.save()
-            media_list.append(media)
-            
-        media_image = [media for media in media_list if media.type == Media.MEDIA_TYPES.IMAGE]
-        media_video = [media for media in media_list if media.type == Media.MEDIA_TYPES.VIDEO]
+            Media.objects.create(file=media_file, type=Media.MEDIA_TYPES.VIDEO, post=post)
         
-        # Tuần tự hóa dữ liệu bài post và các media liên quan
-        response_data = serializers.PostSerializer(post).data
-        response_data['media_image'] = serializers.MediaSerializer(media_image, many=True).data
-        response_data['media_video'] = serializers.MediaSerializer(media_video, many=True).data
-        
-        return Response(response_data, status=status.HTTP_201_CREATED)      
+        response_data = serializers.AuthenticatedDetailPostSerializer(post, context={'request': request}).data
+        return Response(response_data, status=status.HTTP_201_CREATED)         
 
     def partial_update(self, request, pk):
         post = self.get_object()
         
-        # Cập nhật nội dung bài viết
         for k, v in request.data.items():
             if k not in ['media_image', 'media_video', 'delete_media_ids']:
                 setattr(post, k, v)
-            
         post.save()
         
-        # Xử lý xóa các media theo ID
         delete_media_ids = request.data.get('delete_media_ids', "")
         if delete_media_ids:
             delete_media_ids_list = [int(id.strip()) for id in delete_media_ids.split(",")]
             Media.objects.filter(id__in=delete_media_ids_list, post=post).delete()
         
-        # Xử lý thêm các media mới
         media_image_request = request.FILES.getlist('media_image')
         media_video_request = request.FILES.getlist('media_video')
         
@@ -133,10 +116,7 @@ class PostViewSet(viewsets.ViewSet,
         for media_file in media_video_request:
             Media.objects.create(file=media_file, type=Media.MEDIA_TYPES.VIDEO, post=post)
 
-        response_data = serializers.PostSerializer(post).data
-        response_data['media_image'] = serializers.MediaSerializer(post.post_media.filter(type=Media.MEDIA_TYPES.IMAGE), many=True).data
-        response_data['media_video'] = serializers.MediaSerializer(post.post_media.filter(type=Media.MEDIA_TYPES.VIDEO), many=True).data
-        
+        response_data = serializers.AuthenticatedDetailPostSerializer(post, context={'request': request}).data
         return Response(response_data)
     
     
@@ -162,13 +142,13 @@ class InvitationViewSet(viewsets.ViewSet,
         
         # Xử lý recipients_users
         if recipients_users_ids:
-            recipients_users_lists = [int(id.strip()) for id in recipients_users_ids.split(",") if id.strip().isdigit()]
+            recipients_users_lists = [int(id.strip()) for id in recipients_users_ids]
             users = User.objects.filter(id__in=recipients_users_lists)
             invitation.recipients_users.set(users)
         
         # Xử lý recipients_groups
         if recipients_groups_ids:
-            recipients_groups_lists = [int(id.strip()) for id in recipients_groups_ids.split(",") if id.strip().isdigit()]
+            recipients_groups_lists = [int(id.strip()) for id in recipients_groups_ids]
             groups = Group.objects.filter(id__in=recipients_groups_lists)
             invitation.recipients_groups.set(groups)
     
