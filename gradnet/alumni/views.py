@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets, generics, status, parsers, permissions
 from alumni.models import *
 from alumni import serializers, perms, paginators
+from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 
 # Create your views here.
@@ -55,8 +56,12 @@ class PostViewSet(viewsets.ViewSet,
     pagination_class = paginators.PostPaginator
     
     def get_permissions(self):
-        if self.action in ['partial_update']:
+        if self.action in ['partial_update', 'block-comments', 'delete_comment', 'update_comment']:
             return [perms.PostOwner()]
+        elif self.action in ['delete_comment']:
+            return [perms.PostOwner() or perms.CommentOwner()]
+        elif self.action in ['update_comment']:
+            return [perms.CommentOwner()]
         elif self.action in ['destroy']:
             return [perms.PostOwner() or permissions.IsAdminUser()]
         return self.permission_classes
@@ -135,10 +140,45 @@ class PostViewSet(viewsets.ViewSet,
     @action(methods=['post'], url_path='add-comment', detail=True)
     def add_comment(self, request, pk):
         post = self.get_object()
-        c = post.comment_set.create(user=request.user, content=request.data.get('content'))
+        if post.allow_comments:
+            c = post.comment_set.create(user=request.user, content=request.data.get('content'))
 
-        return Response(serializers.CommentSerializer(c).data,
-                        status=status.HTTP_201_CREATED)
+            return Response(serializers.CommentSerializer(c).data,
+                            status=status.HTTP_201_CREATED)
+        
+        else:
+            return Response({'detail': 'Không thể comment trong bài viết này!'}, status=status.HTTP_403_FORBIDDEN)
+    
+    @action(methods=['post'], url_path='block-comments', detail=True)    
+    def block_comments(self, request, pk=None):
+        post = self.get_object()
+        post.allow_comments = not post.allow_comments
+        post.save()
+
+        if post.allow_comments:
+            status_message = 'Mở khóa bình luận'
+        else:
+            status_message = 'Đã khóa bình luận'
+
+        return Response({'status': status_message}, status=status.HTTP_200_OK)
+    
+    @action(methods=['post'], url_path='delete-comment', detail=True)
+    def delete_comment(self, request, pk=None):
+        post = self.get_object()
+        comment_id = request.data.get('comment_id')
+        comment = get_object_or_404(Comment, id=comment_id, post=post)
+        comment.delete()
+        return Response({'status': 'Comment deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+    @action(methods=['post'], url_path='update-comment', detail=True)
+    def update_comment(self, request, pk):
+        comment_id = request.data.get('comment_id')
+        content = request.data.get('content')
+        comment = Comment.objects.get(pk=comment_id)
+        
+        comment.content = content
+        comment.save()
+        return Response(serializers.CommentSerializer(comment).data, status=status.HTTP_200_OK)
         
     @action(methods=['get'], url_path='get-actions', detail=True)
     def get_actions(self, request, pk):
