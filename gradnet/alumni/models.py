@@ -47,6 +47,7 @@ class BaseModel(models.Model):
         abstract = True
 
 class Post(BaseModel):
+    caption = models.CharField(max_length=100)
     content = RichTextField()
     allow_comments = models.BooleanField(default=True)
     

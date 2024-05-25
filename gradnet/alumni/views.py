@@ -54,9 +54,12 @@ class PostViewSet(viewsets.ViewSet,
     parser_classes = [parsers.MultiPartParser, ]
     permission_classes = [permissions.IsAuthenticated()]
     pagination_class = paginators.PostPaginator
+    serializer_class = serializers.AuthenticatedDetailPostSerializer
     
     def get_permissions(self):
-        if self.action in ['partial_update', 'block-comments', 'delete_comment', 'update_comment']:
+        if self.action in ['list']:
+            return [permissions.AllowAny()]
+        elif self.action in ['partial_update', 'block-comments', 'delete_comment', 'update_comment']:
             return [perms.PostOwner()]
         elif self.action in ['delete_comment']:
             return [perms.PostOwner() or perms.CommentOwner()]
@@ -66,10 +69,10 @@ class PostViewSet(viewsets.ViewSet,
             return [perms.PostOwner() or permissions.IsAdminUser()]
         return self.permission_classes
     
-    def get_serializer_class(self):
-        if self.action.__eq__('retrieve'):
-            return serializers.AuthenticatedDetailPostSerializer
-        return serializers.PostSerializer
+    # def get_serializer_class(self):
+    #     if self.action.__eq__('retrieve'):
+    #         return serializers.AuthenticatedDetailPostSerializer
+    #     return serializers.PostSerializer
     
     def get_queryset(self):
         queryset = self.queryset
@@ -162,7 +165,7 @@ class PostViewSet(viewsets.ViewSet,
 
         return Response({'status': status_message}, status=status.HTTP_200_OK)
     
-    @action(methods=['post'], url_path='delete-comment', detail=True)
+    @action(methods=['delete'], url_path='delete-comment', detail=True)
     def delete_comment(self, request, pk=None):
         post = self.get_object()
         comment_id = request.data.get('comment_id')

@@ -94,7 +94,7 @@ class AuthenticatedDetailPostSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Post
-        fields = PostSerializer.Meta.fields + ['content','user', 'media']
+        fields = PostSerializer.Meta.fields + ['caption', 'content', 'user', 'media']
         
         
 class InvitationSerializer(serializers.ModelSerializer):
