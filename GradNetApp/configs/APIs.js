@@ -4,8 +4,19 @@ import axios from "axios";
 const BASE_URL = "http://10.17.64.128:8000/";
 
 export const endpoints = {
-  users: "/users/",
+  register: "/users/",
+  login: "/o/token/",
+  "current-user": "/users/current-user",
   posts: "/posts/",
+};
+
+export const authAPI = (token) => {
+  return axios.create({
+    baseURL: BASE_URL,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };
 
 export default axios.create({
