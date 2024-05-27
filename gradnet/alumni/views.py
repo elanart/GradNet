@@ -19,6 +19,14 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
         if self.action in ['current_user', 'list_posts', 'get_posts', 'my_post', 'change_password']:
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
+    
+    @action(methods=['get'], url_path='check-username', detail=False)
+    def get_username(self, request):
+        username = request.query_params.get('username')
+        u =  User.objects.filter(username=username).exists()
+        if not u:
+            return Response({"success": "Username hợp lệ"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Username đã tồn tại!"})
         
     @action(methods=['get', 'patch'], url_path='current-user', detail=False)
     def current_user(self, request):

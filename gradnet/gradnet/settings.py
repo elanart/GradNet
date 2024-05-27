@@ -26,8 +26,12 @@ SECRET_KEY = 'django-insecure-!$f!96cri^yrqmcw6wyrozors%&$ox#&h+vb7oubzqs#kz*$h1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = ['192.168.1.210']
-ALLOWED_HOSTS = ['10.17.64.128']
+ALLOWED_HOSTS = ['127.0.0.1', 
+                 '192.168.1.210',
+                 '10.17.64.128',
+                 '10.0.2.2',
+                 ".vercel.app", 
+                 ".now.sh"]
 
 
 # Application definition
@@ -83,14 +87,26 @@ WSGI_APPLICATION = 'gradnet.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#     'ENGINE': 'django.db.backends.mysql',
+#     'NAME': 'gradnet',
+#     'USER': 'root',
+#     'PASSWORD': 'lelan2563',
+#     'HOST': '' # mặc định localhost
+#     }
+# }
+
+import os
+
 DATABASES = {
-    'default': {
-    'ENGINE': 'django.db.backends.mysql',
-    'NAME': 'gradnet',
-    'USER': 'root',
-    'PASSWORD': 'lelan2563',
-    'HOST': '' # mặc định localhost
-    }
+    "default": {
+    "ENGINE": "django.db.backends.postgresql_psycopg2",
+    "NAME": os.getenv("POSTGRES_DATABASE"),
+    "USER": os.getenv("POSTGRES_USER"),
+    "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+    "HOST": os.getenv("POSTGRES_HOST"),
+    },
 }
 
 
@@ -128,7 +144,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -151,6 +167,7 @@ REST_FRAMEWORK = {
     )
 }
 
+OAUTH2_PROVIDER = { 'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore' }
 CLIENT_ID = 'EIFOWs5h8FPJPluYFvXIQdcLvAWfjn8AHXwrW3AG'
 CLIENT_SECRET = 'o3YdzEnDROX2W25N15Ar8PDdOxwYHALSfrxPEcuCHRDBXPHPPkAm3bDUrbawn5VE4FGEQaLyP8zrMGJdasYL9ZFrl77jQzK64sxB3kwevXMB5IWJLmsnAHhigeJJkJQL'
 
@@ -159,7 +176,18 @@ import cloudinary
 cloudinary.config( 
   cloud_name = "djga3njzi", 
   api_key = "595946198281489", 
-  api_secret = "hd1cRj177f0HVAQ-vSeqG_yT9Y0" 
+  api_secret = "hd1cRj177f0HVAQ-vSeqG_yT9Y0",
+#   api_proxy = "https://proxy.server:3128/"
 )
 
-STATIC_ROOT = f"{BASE_DIR}/alumni/static/"
+
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles_build", "static")
+
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "static"), ]
+
+MEDIA_URL = "/media/"
+
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+from dotenv import load_dotenv
+load_dotenv(".env.development.local")

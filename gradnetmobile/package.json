@@ -1,0 +1,32 @@
+{
+  "name": "gradnetmobile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@ant-design/icons-react-native": "^2.3.2",
+    "@react-native-async-storage/async-storage": "^1.23.1",
+    "@react-navigation/bottom-tabs": "^6.5.20",
+    "@react-navigation/native": "^6.1.17",
+    "@react-navigation/stack": "^6.3.29",
+    "axios": "^1.7.2",
+    "expo": "~51.0.8",
+    "expo-status-bar": "~1.12.1",
+    "react": "18.2.0",
+    "react-native": "0.74.1",
+    "react-native-onboarding-swiper": "^1.2.0",
+    "react-native-paper": "^5.12.3",
+    "react-native-safe-area-context": "^4.10.1",
+    "react-native-screens": "^3.31.1",
+    "react-native-vector-icons": "^10.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0"
+  },
+  "private": true
+}
