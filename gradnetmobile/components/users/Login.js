@@ -2,41 +2,68 @@ import { Button, Image, Text, TouchableOpacity, View } from "react-native";
 import MyStyles from "../../styles/MyStyles";
 import AntDesign from "react-native-vector-icons/AntDesign";
 import FormInput from "../base/form/FormInput";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import FormButton from "../base/form/FormButton";
-import APIs, { authAPI, endpoints } from "../../configs/APIs";
+import APIs, {
+  authAPI,
+  client_id,
+  client_secret,
+  endpoints,
+} from "../../configs/APIs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { URLSearchParams } from "react-native-url-polyfill";
+import { MyDispatcherContext } from "../../configs/Context";
 
 const Login = ({ navigation }) => {
-  const [username, setUserName] = useState();
-  const [password, setPassword] = useState();
   const [user, setUser] = useState({});
   const [loading, setLoading] = useState(false);
 
+  const dispatch = useContext(MyDispatcherContext);
+
+  //hàm này dùng để cập nhật thông tin user
   const change = (value, field) => {
     setUser((current) => {
+      // current: lấy ra user hiện tại
       return { ...current, [field]: value };
+      //trả về 1 user mới với sao chép các trường cũ "...current" và trường mới có giá trị mới "[field]: value"
     });
   };
 
   const login = async () => {
     setLoading(true);
     try {
-      let res = await APIs.post(endpoints["login"], {
-        ...user,
-        client_id: "EIFOWs5h8FPJPluYFvXIQdcLvAWfjn8AHXwrW3AG",
-        client_secret:
-          "o3YdzEnDROX2W25N15Ar8PDdOxwYHALSfrxPEcuCHRDBXPHPPkAm3bDUrbawn5VE4FGEQaLyP8zrMGJdasYL9ZFrl77jQzK64sxB3kwevXMB5IWJLmsnAHhigeJJkJQL",
-        grant_type: "password",
+      const payload = new URLSearchParams();
+      payload.append("username", user.username);
+      payload.append("password", user.password);
+      payload.append("client_id", client_id);
+      payload.append("client_secret", client_secret);
+      payload.append("grant_type", "password");
+
+      let res = await APIs.post(endpoints.login, payload.toString(), {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       });
-      console.info(res.data);
+
+      // console.info(res.data);
       await AsyncStorage.setItem("token", res.data.access_token);
 
+      //setTimeout để chờ lưu token vào AsyncStorage
       setTimeout(async () => {
         let user = await authAPI(res.data.access_token).get(
-          endpoints["current-user"]
+          endpoints["current-user"] //Sau khi có token thì lấy thông tin chi tiết của user
         );
-        console.info(user.data);
+        // console.info(user.data);
+
+        AsyncStorage.setItem("user", JSON.stringify(user.data));
+
+        dispatch({
+          type: "login",
+          payload: user.data,
+        });
+
+        // Chuyển hướng người dùng sau khi đăng nhập thành công
+        navigation.navigate("Register");
       }, 100);
     } catch (ex) {
       console.error(ex);
@@ -53,20 +80,22 @@ const Login = ({ navigation }) => {
       />
       <Text style={MyStyles.text}>ĐĂNG NHẬP TÀI KHOẢN</Text>
       <FormInput
-        value={username}
+        value={user["username"]} //user["username"]: cách lấy giá trị của trường username trong user
         text="Tên người dùng"
         icon="user"
         keyboardType="email-address"
         autoCapitalize="none"
         autoCorrect={false}
+        onChangeText={(value) => change(value, "username")} //change(giá trị cập nhật, tên trường cập nhật)
       />
       <FormInput
-        value={password}
+        value={user["password"]}
         text="Nhập mật khẩu"
         icon="lock"
         secureTextEntry={true}
+        onChangeText={(value) => change(value, "password")}
       />
-      <FormButton title="Đăng nhập" />
+      <FormButton title="Đăng nhập" onPress={login} disabled={loading} />
 
       <TouchableOpacity
         style={MyStyles.forgotpasswordButton}

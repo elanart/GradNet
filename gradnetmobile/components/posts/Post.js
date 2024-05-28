@@ -16,6 +16,7 @@ const Post = () => {
       let url = `${endpoints.posts}?q=${keyword}&page=${page}`;
       try {
         let res = await APIs.get(url);
+        console.log(res.data.results);
         if (page === 1) setPosts(res.data.results);
         else
           setPosts((current) => {
@@ -63,7 +64,7 @@ const Post = () => {
         ) : (
           <>
             {posts.map((p) => (
-              <Card key={p.id}>{p.content}</Card>
+              <Text key={p.id}>{p.content}</Text>
             ))}
           </>
         )}
@@ -82,9 +83,9 @@ const Post = () => {
             key={p.id}
             title={p.caption}
             description={p.created_date}
-            left={() => (
-              <Image style={MyStyles.avatar} source={{ uri: p.media }} />
-            )}
+            // left={() => (
+            //   <Image style={MyStyles.avatar} source={{ uri: p.media }} />
+            // )}
           />
         ))}
         <Text>Vẫn hiện oke!</Text>
