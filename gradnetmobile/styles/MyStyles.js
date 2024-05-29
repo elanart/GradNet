@@ -6,7 +6,7 @@ export default StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    margin: 15,
+    margin: 20,
   },
   buttonContainer: {
     marginTop: 10,
@@ -83,7 +83,7 @@ export default StyleSheet.create({
     marginTop: 15,
   },
   forgotpasswordButton: {
-    marginVertical: 35,
+    marginVertical: 20,
   },
   navigationText: {
     fontSize: 18,

@@ -9,6 +9,7 @@ export const endpoints = {
   posts: "/posts/",
   login: "/o/token/",
   "current-user": "/users/current-user",
+  register: "/users/",
 };
 
 export const authAPI = (token) => {
