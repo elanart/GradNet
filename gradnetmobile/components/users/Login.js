@@ -24,8 +24,6 @@ const Login = ({ navigation }) => {
 
   const dispatch = useContext(MyDispatcherContext);
 
-  // useEffect(() => {}, []);
-
   //hàm này dùng để cập nhật thông tin user
   const change = (value, field) => {
     setUser((current) => ({ ...current, [field]: value }));
@@ -41,19 +39,6 @@ const Login = ({ navigation }) => {
       setError("Tên người dùng và mật khẩu không được để trống");
       return;
     }
-
-    // let errors = {};
-    // if (!user.username) {
-    //   errors.username = "Tên người dùng không được để trống";
-    // }
-    // if (!user.password) {
-    //   errors.password = "Mật khẩu không được để trống";
-    // }
-
-    // if (Object.keys(errors).length > 0) {
-    //   setError(errors);
-    //   return;
-    // }
 
     setLoading(true);
     try {
@@ -82,7 +67,6 @@ const Login = ({ navigation }) => {
 
         AsyncStorage.setItem("user", JSON.stringify(user.data));
 
-        //
         dispatch({
           type: "login",
           payload: user.data,
