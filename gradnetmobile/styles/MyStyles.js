@@ -89,5 +89,89 @@ export default StyleSheet.create({
     fontSize: 18,
     fontWeight: "500",
     color: "#2e64e5",
+  },searchBar: {
+    margin: 16,
   },
+  containers: {
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  searchBar: {
+    margin: 16,
+  },
+  card: {
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  media: {
+    width: '100%',
+    height: 200,
+    marginTop: 8,
+  },
+  scrollViewContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionText: {
+    marginLeft: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)"
+  },
+  modalContent: {
+    width: "80%",
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    flexDirection: "row",
+    justifyContent: "space-around"
+  },
+
+  reactionText: {
+    marginTop: 5,
+    fontSize: 12
+  },
+  reactionsContainer: {
+    flexDirection: 'row',
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  reactionButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 5,
+  },
+  reactionIcon: {
+    color: '#000',
+  },
+  
 });

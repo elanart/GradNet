@@ -30,7 +30,7 @@ const MyStack = () => {
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Register" component={Register} />
       <Stack.Screen name="Login" component={Login} />
-      {/* <Stack.Screen name="Post" component={Post} /> */}
+      <Stack.Screen name="Post" component={Post} />
     </Stack.Navigator>
   );
 };

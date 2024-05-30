@@ -1,14 +1,17 @@
 import axios from "axios";
 
 const BASE_URL = "https://elanart.pythonanywhere.com/";
-export const client_id = "EAHngO2GVq31vkP79iUM6WdkitjnuxaYmWDVH5QS";
+export const client_id = "E91viVd5R6KT71qXjNxPoM7OmtvHox2C5Eodq9sw";
 export const client_secret =
-  "ZJCMpRbOpK0nJlHtCZNrDYtQnqILqsX84rtRjE6AoHR2nUJBg2TG4LTge2wxmxjQ3qIfNuW4sUutORRgur2tlsBtFS522HQZBXwLPLxozVPDIC5PCRpVUmwYR1ykjgID";
+  "ushMLls9Pto0qNtCwQ04Cq4b6wDJeg06V5XzplSZnTxCTPHXIBeZjH9fw1kihYumwDKBh3K0hHbOSvT8qTcZ8R92L7WZNaHglZ8rBuqTNIXlF1ZJsIY24F087DLfxs6e";
+
+
 
 export const endpoints = {
   posts: "/posts/",
   login: "/o/token/",
   "current-user": "/users/current-user",
+  register: "/users/",
 };
 
 export const authAPI = (token) => {
