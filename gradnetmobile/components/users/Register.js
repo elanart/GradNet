@@ -10,21 +10,23 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   TextInput,
-  Button,
 } from "react-native";
 import FormInput from "../base/form/FormInput";
 import FormButton from "../base/form/FormButton";
 import APIs, { endpoints } from "../../configs/APIs";
 import * as ImagePicker from "expo-image-picker";
-import { HelperText, TouchableRipple } from "react-native-paper";
-import { FormStyle } from "../base/form/FormStyle";
-import useDebounce from "../hooks/useDebounce";
+import { HelperText, TouchableRipple, Button } from "react-native-paper";
+import useDebounce from "../../hooks/useDebounce";
+import { RegisterStyles } from "../users/Styles";
+import { stringify } from "flatted";
+import MyStyles from "../../styles/MyStyles";
+import mime from "mime";
 
-const RegisterScreen = ({ navigation }) => {
+const Register = ({ navigation }) => {
   const fields = [
-    { label: "Tên người dùng", icon: "text", field: "first_name" },
-    { label: "Họ và tên lót", icon: "text", field: "last_name" },
-    { label: "Tên đăng nhập", icon: "account", field: "username" },
+    { label: "Tên người dùng", icon: "contacts", field: "first_name" },
+    { label: "Họ và tên lót", icon: "contacts", field: "last_name" },
+    { label: "Tên đăng nhập", icon: "user", field: "username" },
     {
       label: "Mật khẩu",
       icon: "eye",
@@ -101,7 +103,7 @@ const RegisterScreen = ({ navigation }) => {
   const picker = async () => {
     let { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Gradnet", "Permissions denied!");
+Alert.alert("Gradnet", "Permissions denied!");
     } else {
       const res = await ImagePicker.launchImageLibraryAsync();
       if (!res.canceled) change(res.assets[0], "avatar");
@@ -127,14 +129,13 @@ const RegisterScreen = ({ navigation }) => {
     setLoading(true);
     try {
       let form = new FormData();
-      // for (let k in user) form.append(k, user[k]);
       for (let key in user) {
         if (key !== "confirm") {
           if (key === "avatar") {
             form.append(key, {
               uri: user.avatar.uri,
               name: user.avatar.fileName || "avatar.jpg",
-              type: user.avatar.type || "image/jpeg",
+              type: mime.getType(user.avatar.uri) || "image/jpeg",
             });
           } else {
             form.append(key, user[key]);
@@ -142,17 +143,14 @@ const RegisterScreen = ({ navigation }) => {
         }
       }
 
-      // console.log(form);
-
       let res = await APIs.post(endpoints["register"], form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      // console.log(res);
-
-      // if (res.status === 201) navigation.navigate("Login");
-      // else setError((current) => ({ ...current, ...res.data }));
+      if (res.status === 201) navigation.navigate("Login");
+      else setError((current) => ({ ...current, ...res.data }));
     } catch (ex) {
+      console.log(ex);
       Alert.alert(
         "Lỗi hệ thống",
         "Không thể đăng ký tài khoản. Vui lòng thử lại sau."
@@ -163,69 +161,81 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        margin: 20,
+      }}
     >
-      <ScrollView contentContainerStyle={FormStyle.container}>
-        <Image
-          source={require("../../assets/logoOU.png")}
-          style={FormStyle.logo}
-        />
-        <Text style={FormStyle.text}>ĐĂNG KÝ TÀI KHOẢN</Text>
-        <TouchableRipple onPress={picker} rippleColor="rgba(0, 0, 0, .32)">
-          {user.avatar ? (
+      <ScrollView>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <View style={{ alignItems: "center" }}>
+            <Image
+              source={require("../../assets/logoOU.png")}
+              style={MyStyles.logo}
+            />
+          </View>
+
+          <View style={{ alignItems: "center" }}>
+            <Text style={MyStyles.text}>ĐĂNG KÝ NGƯỜI DÙNG</Text>
+          </View>
+
+          {fields.map((f) => (
+            <>
+              <FormInput
+                key={f.field}
+                value={user[f.field]}
+                onChangeText={(t) => change(t, f.field)}
+                text={f.label}
+                secureTextEntry={f.secureTextEntry && secureTextEntry[f.field]}
+                icon={f.icon}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoCorrect={false}
+              />
+            </>
+          ))}
+
+          <TouchableRipple
+            onPress={picker}
+            style={(MyStyles.forgotpasswordButton, { alignItems: "center" })}
+          >
+            <Button labelStyle={RegisterStyles.pickerButtonText}>
+              Chọn ảnh đại diện...
+            </Button>
+          </TouchableRipple>
+
+          {user.avatar && (
             <Image
               source={{ uri: user.avatar.uri }}
-              style={{ width: 200, height: 200 }}
+style={{ width: 100, height: 100 }}
             />
-          ) : (
-            <View style={FormStyle.avatarPlaceholder}>
-              <Text>Chọn ảnh đại diện</Text>
-            </View>
           )}
-        </TouchableRipple>
-        {fields.map((f) => (
-          <TextInput
-            key={f.field}
-            mode="outlined"
-            label={f.label}
-            secureTextEntry={secureTextEntry[f.field]}
-            left={<TextInput.Icon icon={f.icon} />}
-            right={
-              f.secureTextEntry ? (
-                <TextInput.Icon
-                  icon="eye"
-                  onPress={() =>
-                    setSecureTextEntry((current) => ({
-                      ...current,
-                      [f.field]: !current[f.field],
-                    }))
-                  }
-                />
-              ) : null
-            }
-            onChangeText={(value) => change(value, f.field)}
-            value={user[f.field]}
-            error={error[f.field]}
+
+          <FormButton
+            title="Đăng ký tài khoản"
+            onPress={register}
+            disabled={loading}
           />
-        ))}
-        <HelperText
-          style={{ fontSize: 16 }}
-          type="error"
-          visible={!!Object.keys(error).length}
-        >
-          {Object.values(error).join(", ")}
-        </HelperText>
-        <FormButton title="Đăng ký" onPress={register} disabled={loading} />
-        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-          <Text style={FormStyle.navButtonText}>
-            Đã có tài khoản? Đăng nhập tại đây
-          </Text>
-        </TouchableOpacity>
+
+          <TouchableOpacity
+            style={
+              (MyStyles.forgotpasswordButton,
+              { alignItems: "center", marginTop: 15 })
+            }
+            onPress={() => navigation.navigate("Login")}
+          >
+            <Text style={MyStyles.navigationText}>
+              Đã có tài khoản? Đăng nhập tại đây
+            </Text>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
-export default RegisterScreen;
+export default Register;

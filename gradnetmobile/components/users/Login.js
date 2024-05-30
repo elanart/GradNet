@@ -23,7 +23,7 @@ const Login = ({ navigation }) => {
   const [error, setError] = useState("");
 
   const dispatch = useContext(MyDispatcherContext);
-  
+
   //hàm này dùng để cập nhật thông tin user
   const change = (value, field) => {
     setUser((current) => ({ ...current, [field]: value }));
@@ -73,7 +73,7 @@ const Login = ({ navigation }) => {
         });
 
         // Chuyển hướng người dùng sau khi đăng nhập thành công
-        navigation.goBack();
+        navigation.navigate("Post");
       }, 100);
     } catch (ex) {
       // console.error(ex);
@@ -83,98 +83,97 @@ const Login = ({ navigation }) => {
     }
   };
 
-  return (
-    <View style={MyStyles.container}>
-      <Image
-        source={require("../../assets/logoOU.png")}
-        style={MyStyles.logo}
-      />
-      <Text style={MyStyles.text}>ĐĂNG NHẬP TÀI KHOẢN</Text>
-      <FormInput
-        value={user["username"]} //user["username"]: cách lấy giá trị của trường username trong user
-        text="Tên người dùng"
-        icon="user"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-        onChangeText={(value) => change(value, "username")} //change(giá trị cập nhật, tên trường cập nhật)
-      />
+  return (<View style={MyStyles.container}>
+    <Image
+      source={require("../../assets/logoOU.png")}
+      style={MyStyles.logo}
+    />
+    <Text style={MyStyles.text}>ĐĂNG NHẬP TÀI KHOẢN</Text>
+    <FormInput
+      value={user["username"]} //user["username"]: cách lấy giá trị của trường username trong user
+      text="Tên người dùng"
+      icon="user"
+      keyboardType="email-address"
+      autoCapitalize="none"
+      autoCorrect={false}
+      onChangeText={(value) => change(value, "username")} //change(giá trị cập nhật, tên trường cập nhật)
+    />
 
-      <FormInput
-        value={user["password"]}
-        text="Nhập mật khẩu"
-        icon="lock"
-        secureTextEntry={true}
-        onChangeText={(value) => change(value, "password")}
-      />
+    <FormInput
+      value={user["password"]}
+      text="Nhập mật khẩu"
+      icon="lock"
+      secureTextEntry={true}
+      onChangeText={(value) => change(value, "password")}
+    />
 
-      <HelperText
-        style={{
-          fontSize: 16,
-        }}
-        type="error"
-        visible={!!error}
-      >
-        {error}
-      </HelperText>
+    <HelperText
+      style={{
+        fontSize: 16,
+      }}
+      type="error"
+      visible={!!error}
+    >
+      {error}
+    </HelperText>
 
-      <FormButton title="Đăng nhập" onPress={login} disabled={loading} />
+    <FormButton title="Đăng nhập" onPress={login} disabled={loading} />
 
-      <TouchableOpacity
-        style={MyStyles.forgotpasswordButton}
-        onPress={() => {}}
-      >
-        <Text style={MyStyles.navigationText}>Quên mật khẩu?</Text>
-      </TouchableOpacity>
+    <TouchableOpacity
+      style={MyStyles.forgotpasswordButton}
+      onPress={() => {}}
+    >
+      <Text style={MyStyles.navigationText}>Quên mật khẩu?</Text>
+    </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[FormStyle.buttonContainer, { backgroundColor: "#f5e7ea" }]}
-        onPress={() => {}}
-      >
-        <View style={FormStyle.iconWrapper}>
-          <FontAwesome
-            name="google"
-            style={FormStyle.icon}
-            size={22}
-            color="#de4d41"
-          />
-        </View>
-        <View style={FormStyle.btnTxtWrapper}>
-          <Text style={[FormStyle.buttonText, { color: "#de4d41" }]}>
-            Đăng nhập bằng Google
-          </Text>
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[FormStyle.buttonContainer, { backgroundColor: "#6e7c8a" }]}
-        onPress={() => {}}
-      >
-        <View style={FormStyle.iconWrapper}>
-          <FontAwesome
-            name="github"
-            style={FormStyle.icon}
-            size={22}
-            color="#ffffff"
-          />
-        </View>
-        <View style={FormStyle.btnTxtWrapper}>
-          <Text style={[FormStyle.buttonText, { color: "#ffffff" }]}>
-            Đăng nhập bằng GitHub
-          </Text>
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={MyStyles.forgotpasswordButton}
-        onPress={() => navigation.navigate("Register")}
-      >
-        <Text style={MyStyles.navigationText}>
-          Chưa có tài khoản? Đăng ký tại đây
+    <TouchableOpacity
+      style={[FormStyle.buttonContainer, { backgroundColor: "#f5e7ea" }]}
+      onPress={() => {}}
+    >
+      <View style={FormStyle.iconWrapper}>
+        <FontAwesome
+          name="google"
+          style={FormStyle.icon}
+          size={22}
+          color="#de4d41"
+        />
+      </View>
+      <View style={FormStyle.btnTxtWrapper}>
+        <Text style={[FormStyle.buttonText, { color: "#de4d41" }]}>
+          Đăng nhập bằng Google
         </Text>
-      </TouchableOpacity>
-    </View>
-  );
+      </View>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={[FormStyle.buttonContainer, { backgroundColor: "#6e7c8a" }]}
+      onPress={() => {}}
+    >
+      <View style={FormStyle.iconWrapper}>
+        <FontAwesome
+          name="github"
+          style={FormStyle.icon}
+          size={22}
+          color="#ffffff"
+        />
+      </View>
+      <View style={FormStyle.btnTxtWrapper}>
+        <Text style={[FormStyle.buttonText, { color: "#ffffff" }]}>
+          Đăng nhập bằng GitHub
+        </Text>
+      </View>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      style={MyStyles.forgotpasswordButton}
+      onPress={() => navigation.navigate("Register")}
+    >
+      <Text style={MyStyles.navigationText}>
+        Chưa có tài khoản? Đăng ký tại đây
+      </Text>
+    </TouchableOpacity>
+  </View>
+);
 };
 
 export default Login;
