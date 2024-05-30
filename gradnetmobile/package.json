@@ -18,6 +18,8 @@
     "expo": "~51.0.8",
     "expo-image-picker": "^15.0.5",
     "expo-status-bar": "~1.12.1",
+    "flatted": "^3.3.1",
+    "mime": "^4.0.3",
     "react": "18.2.0",
     "react-native": "0.74.1",
     "react-native-onboarding-swiper": "^1.2.0",

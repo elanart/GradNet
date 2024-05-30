@@ -70,8 +70,8 @@ export default StyleSheet.create({
     padding: 20,
   },
   logo: {
-    height: 200,
-    width: 200,
+    height: 150,
+    width: 150,
     resizeMode: "cover",
   },
   text: {
