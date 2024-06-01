@@ -89,18 +89,19 @@ export default StyleSheet.create({
     fontSize: 18,
     fontWeight: "500",
     color: "#2e64e5",
-  },searchBar: {
-    margin: 16,
-  },
-  containers: {
-    padding: 16,
-    backgroundColor: '#fff',
   },
   searchBar: {
     margin: 16,
   },
   card: {
-    marginBottom: 16,
+    marginVertical: 10,
+    marginHorizontal: 15,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    elevation: 5,
   },
   avatar: {
     width: 40,
@@ -108,34 +109,43 @@ export default StyleSheet.create({
     borderRadius: 20,
   },
   media: {
-    width: '100%',
+    width: "100%",
     height: 200,
     marginTop: 8,
+    borderRadius: 10,
   },
   scrollViewContent: {
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
   cardActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "column",
+    justifyContent: "center",
     paddingVertical: 8,
     paddingHorizontal: 16,
-
+  },
+  actionContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    width: "100%",
+    paddingHorizontal: 10,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
   },
   actionText: {
-    marginLeft: 4,
+    marginTop: 4,
+    fontSize: 14,
   },
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)"
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
     width: "80%",
@@ -143,20 +153,16 @@ export default StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     flexDirection: "row",
-    justifyContent: "space-around"
+    justifyContent: "space-around",
   },
-
   reactionText: {
     marginTop: 5,
-    fontSize: 12
+    fontSize: 12,
   },
   reactionsContainer: {
-    flexDirection: 'row',
-    position: 'absolute',
-    bottom: 40,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "white",
     borderRadius: 20,
     padding: 5,
     shadowColor: "#000",
@@ -164,14 +170,14 @@ export default StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    marginTop: -30, // Position above "Thích" text
   },
   reactionButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginHorizontal: 5,
   },
   reactionIcon: {
-    color: '#000',
+    color: "#000",
   },
-  
 });

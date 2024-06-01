@@ -85,7 +85,7 @@ const CreatePost = ({ onPostCreated }) => {
       // khai báo dữ liệu biểu mẫu 
       const formData = new FormData();
       
-      formData.append("caption", postContent);// dữ liệu nội dung bài viết được thêm vào với khóa là "Caption"
+      formData.append("content", postContent);// dữ liệu nội dung bài viết được thêm vào với khóa là "Caption"
       if (selectedImageURI) {
         const uriParts = selectedImageURI.split("."); // tách URI của hình ảnh từng phần dựa trên dấu chấm để xác định loại tệp
         const fileType = uriParts[uriParts.length - 1];// lấy đuôi type ( ví dụ Jpg, png)

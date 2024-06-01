@@ -9,13 +9,13 @@ import { useNavigation } from "@react-navigation/native";
 import CreatePost from "./CreatePost";
 
 // Icon cảm xúc
-const reactions = [
-  { id: 1, name: 'thumb-up-outline', label: 'Thích' },
-  { id: 2, name: 'heart-outline', label: 'Yêu' },
-  { id: 3, name: 'emoticon-happy-outline', label: 'Haha' },
-  { id: 4, name: 'emoticon-surprised-outline', label: 'Wow' },
-  { id: 5, name: 'emoticon-sad-outline', label: 'Buồn' },
-  { id: 6, name: 'emoticon-angry-outline', label: 'Phẫn nộ' }
+export const reactions = [
+  { id: 1, name: 'thumb-up-outline', label: 'Thích', color: '#3b5998' },
+  { id: 2, name: 'heart-outline', label: 'Yêu', color: '#e0245e' },
+  { id: 3, name: 'emoticon-happy-outline', label: 'Haha', color: '#f7b125' },
+  { id: 4, name: 'emoticon-surprised-outline', label: 'Wow', color: '#ffac33' },
+  { id: 5, name: 'emoticon-sad-outline', label: 'Buồn', color: '#1c1e21' },
+  { id: 6, name: 'emoticon-angry-outline', label: 'Phẫn nộ', color: '#d52834' },
 ];
 
 const Post = () => {
@@ -25,8 +25,6 @@ const Post = () => {
   const [page, setPage] = useState(1);
   const [showReactions, setShowReactions] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
   const navigation = useNavigation();
 
   const loadPosts = async () => {
@@ -53,7 +51,6 @@ const Post = () => {
 
   const loadMore = ({ nativeEvent }) => {
     if (!loading && page > 0 && isCloseToBottom(nativeEvent)) {
-      console.info(Math.random());
       setPage(page + 1);
     }
   };
@@ -68,8 +65,22 @@ const Post = () => {
       );
       return;
     }
-    // Thực hiện hành động cảm xúc
-    console.log(`Thực hiện hành động: ${action} trên bài viết: ${post.id}`);
+    try {
+      // Gửi yêu cầu đến backend để thực hiện hành động like/unlike
+      const response = await APIs.post(
+        `${endpoints.posts}/${post.id}/add-action/`,
+        { type: action },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      // Cập nhật trạng thái của bài viết sau khi đã thực hiện hành động
+      setPosts((currentPosts) =>
+        currentPosts.map((p) =>
+          p.id === post.id ? { ...p, reaction: response.data.type } : p
+        )
+      );
+    } catch (error) {
+      console.error("Lỗi khi thực hiện hành động:", error);
+    }
     setShowReactions(false);
   };
 
@@ -77,9 +88,7 @@ const Post = () => {
     setSelectedPost(post);
     setShowReactions(!showReactions);
   };
-  // Hàm này được truyền đến thành phần CreatePost.
-   //Khi một bài viết mới được tạo, hàm này sẽ được gọi với bài viết mới,
-   // và nó sẽ cập nhật danh sách bài viết (posts) để hiển thị bài viết mới ở đầu danh sách.
+
   const handlePostCreated = (newPost) => {
     setPosts([newPost, ...posts]);
   };
@@ -98,54 +107,60 @@ const Post = () => {
           value={keyword}
         />
       </View>
-      
-      <CreatePost onPostCreated={handlePostCreated} /> 
+
+      <CreatePost onPostCreated={handlePostCreated} />
       <ScrollView 
         contentContainerStyle={MyStyles.scrollViewContent}
         onScroll={loadMore}
         scrollEventThrottle={400}
       >
         {loading && <ActivityIndicator />}
-        {posts.map((p) => (
-          <Card key={p.id} style={MyStyles.card}>
-            <Card.Title
-              title={`${p.user.first_name} ${p.user.last_name}`}
-              subtitle={new Date(p.created_date).toLocaleString()}
-              left={() => (
-                <Avatar.Image size={40} source={{ uri: p.user.avatar }} />
-              )}
-            />
-            <Card.Content>
-              <Text>{p.caption}</Text>
-              {p.media.length > 0 && (
-                <Image style={MyStyles.media} source={{ uri: p.media[0].file }} />
-              )}
-            </Card.Content>
-            <Card.Actions style={MyStyles.cardActions}>
-              <TouchableOpacity style={MyStyles.actionButton} onPress={() => toggleReactions(p)}>
-                <Icon name="thumb-up-outline" size={20} />
-                <Text style={MyStyles.actionText}>Thích</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={MyStyles.actionButton}>
-                <Icon name="comment-outline" size={20} />
-                <Text style={MyStyles.actionText}>Bình luận</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={MyStyles.actionButton}>
-                <Icon name="share-outline" size={20} />
-                <Text style={MyStyles.actionText}>Chia sẻ</Text>
-              </TouchableOpacity>
-            </Card.Actions>
-            {showReactions && selectedPost && selectedPost.id === p.id && (
-              <View style={MyStyles.reactionContainer}>
-                {reactions.map((reaction) => (
-                  <TouchableOpacity key={reaction.id} onPress={() => handleAction(reaction.label, p)}>
-                    <Icon name={reaction.name} size={30} />
+        {posts.map((p) => {
+          const currentReaction = reactions.find(r => r.label === p.reaction);
+          return (
+            <Card key={p.id} style={MyStyles.card}>
+              <Card.Title
+                title={`${p.user.first_name} ${p.user.last_name}`}
+                subtitle={new Date(p.created_date).toLocaleString()}
+                left={() => (
+                  <Avatar.Image size={40} source={{ uri: p.user.avatar }} />
+                )}
+              />
+              <Card.Content>
+                <Text>{p.content}</Text>
+                {p.media.length > 0 && (
+                  <Image style={MyStyles.media} source={{ uri: p.media[0].file }} />
+                )}
+              </Card.Content>
+              <Card.Actions style={MyStyles.cardActions}>
+                <View style={MyStyles.actionContainer}>
+                  <TouchableOpacity style={MyStyles.actionButton} onPress={() => toggleReactions(p)}>
+                    <Icon name={currentReaction ? currentReaction.name : "thumb-up-outline"} size={20} color={currentReaction ? currentReaction.color : undefined} />
+                    <Text style={[MyStyles.actionText, { color: currentReaction ? currentReaction.color : undefined }]}>{currentReaction ? currentReaction.label : "Thích"}</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </Card>
-        ))}
+                  <TouchableOpacity style={MyStyles.actionButton}>
+                    <Icon name="comment-outline" size={20} />
+                    <Text style={MyStyles.actionText}>Bình luận</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={MyStyles.actionButton}>
+                    <Icon name="share-outline" size={20} />
+                    <Text style={MyStyles.actionText}>Chia sẻ</Text>
+                  </TouchableOpacity>
+                </View>
+                {showReactions && selectedPost && selectedPost.id === p.id && (
+                  <View style={MyStyles.reactionsContainer}>
+                    {reactions.map((reaction) => (
+                      <TouchableOpacity key={reaction.id} style={MyStyles.reactionButton} onPress={() => handleAction(reaction.label, p)}>
+                        <Icon name={reaction.name} size={30} color={reaction.color} />
+                        <Text style={MyStyles.reactionText}>{reaction.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </Card.Actions>
+            </Card>
+          );
+        })}
         {loading && <ActivityIndicator size="large" />}
       </ScrollView>
     </View>
