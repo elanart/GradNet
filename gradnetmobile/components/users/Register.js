@@ -103,7 +103,7 @@ const Register = ({ navigation }) => {
   const picker = async () => {
     let { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-Alert.alert("Gradnet", "Permissions denied!");
+      Alert.alert("Gradnet", "Permissions denied!");
     } else {
       const res = await ImagePicker.launchImageLibraryAsync();
       if (!res.canceled) change(res.assets[0], "avatar");
@@ -211,7 +211,7 @@ Alert.alert("Gradnet", "Permissions denied!");
           {user.avatar && (
             <Image
               source={{ uri: user.avatar.uri }}
-style={{ width: 100, height: 100 }}
+              style={{ width: 100, height: 100 }}
             />
           )}
 
