@@ -12,6 +12,7 @@ export const endpoints = {
   login: "/o/token/",
   "current-user": "/users/current-user",
   register: "/users/",
+
   
 };
 

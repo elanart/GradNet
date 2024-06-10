@@ -180,4 +180,22 @@ export default StyleSheet.create({
   reactionIcon: {
     color: "#000",
   },
+  commentContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd"
+  },
+  commentAvatar: {
+    marginRight: 8
+  },
+  commentContent: {
+    flex: 1
+  },
+  commentUserName: {
+    fontWeight: "bold"
+  }
+  
 });
