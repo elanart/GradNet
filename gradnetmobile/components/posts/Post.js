@@ -10,7 +10,7 @@ import {
   StyleSheet
 } from "react-native";
 import MyStyles from "../../styles/MyStyles"; // Assuming MyStyles exists
-import APIs, { endpoints } from "../../configs/APIs";
+import APIs, { authAPI, endpoints } from "../../configs/APIs";
 import {
   ActivityIndicator,
   Card,
@@ -48,6 +48,7 @@ const Post = () => {
   const [commentText, setCommentText] = useState(""); // Track the current comment text
   const [selectedComment, setSelectedComment] = useState(null); // Selected comment for edit/delete
   const [editingCommentText, setEditingCommentText] = useState(""); // Text of the comment being edited
+  const [menuVisible, setMenuVisible] = useState(false); // Track menu visibility
 
   const loadPosts = async () => {
     if (page > 0) {
@@ -74,33 +75,48 @@ const Post = () => {
   const fetchReactionsAndComments = async (postIds) => {
     try {
       const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        throw new Error("Token not found");
+      }
+
       const postsWithReactionsAndComments = await Promise.all(
         postIds.map(async (postId) => {
-          // Fetch reactions
-          const reactionsUrl = `${endpoints.posts}/${postId}/get-actions/`;
-          const reactionsRes = await APIs.get(reactionsUrl, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-          const reactions = reactionsRes.data;
+          try {
+            const reactionsUrl = `${endpoints.posts}/${postId}/get-actions/`;
+            console.log(`Fetching reactions from ${reactionsUrl}`);
+            const reactionsRes = await APIs.get(reactionsUrl, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            const reactions = reactionsRes.data;
+            console.log(`Reactions for post ${postId}:`, reactions);
 
-          // Fetch comments
-          const commentsUrl = `${endpoints.posts}/${postId}/get-comments/`;
-          const commentsRes = await APIs.get(commentsUrl, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-          const comments = commentsRes.data;
-          console.log(comments);
-          return {
-            postId,
-            reactions,
-            comments,
-          };
+            const commentsUrl = `${endpoints.posts}/${postId}/get-comments/`;
+            console.log(`Fetching comments from ${commentsUrl}`);
+            const commentsRes = await APIs.get(commentsUrl, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            const comments = commentsRes.data;
+            console.log(`Comments for post ${postId}:`, comments);
+
+            return {
+              postId,
+              reactions,
+              comments,
+            };
+          } catch (ex) {
+            console.error(`Failed to fetch data for post ${postId}:`, ex);
+            return {
+              postId,
+              reactions: [],
+              comments: [],
+            };
+          }
         })
       );
 
@@ -116,9 +132,7 @@ const Post = () => {
               comments: postData.comments,
             };
           }
-          console.log(postData)
           return post;
-          
         })
       );
     } catch (ex) {
@@ -274,6 +288,135 @@ const Post = () => {
     }
   };
 
+  const [selectedCommentId, setSelectedCommentId] = useState(null);////
+
+  const handleEditComment = (commentId, postId) => {
+    setSelectedCommentId(commentId);////
+    const commentToEdit = comments[postId].find(comment => comment.id === commentId);
+    if (commentToEdit) {
+      setSelectedComment(commentToEdit);
+      setEditingCommentText(commentToEdit.content);
+    }
+  };
+
+
+
+
+
+
+
+const handleDeleteComment = async (commentId, postId, ) => {
+    const token = await AsyncStorage.getItem("token");
+    console.log("------------re---------", token);
+
+    if (!token) {
+        Alert.alert(
+            "Thông báo",
+            "Bạn cần đăng nhập để thực hiện thao tác này.",
+            [{ text: "OK", onPress: () => navigation.navigate("Login") }]
+        );
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('comment_id', commentId);
+  
+        console.log('FormData:', formData);
+
+        const api = authAPI(token);
+        const response = await api({
+            method: 'DELETE',
+            url: `/posts/${postId}/delete-comment/`,
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data',
+            },
+            data: formData,
+        });
+
+        console.log("Response:", response);
+
+        if (response.status === 204) {
+            setComments((currentComments) => {
+                return {
+                    ...currentComments,
+                    [postId]: currentComments[postId].filter(comment => comment.id !== commentId)
+                };
+            });
+        }
+    } catch (error) {
+        if (error.response) {
+            console.error('Error response data:', error.response.data);
+            console.error('Error response status:', error.response.status);
+            console.error('Error response headers:', error.response.headers);
+        } else if (error.request) {
+            console.error('Error request:', error.request);
+        } else {
+            console.error('Error message:', error.message);
+        }
+
+        if (error.response && error.response.status === 401) {
+            Alert.alert(
+                "Unauthorized",
+                "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.",
+                [{ text: "OK", onPress: () => navigation.navigate("Login") }]
+            );
+        } else {
+            Alert.alert(
+                "Network Error",
+                "Có lỗi xảy ra khi kết nối đến server. Vui lòng kiểm tra kết nối mạng của bạn và thử lại.",
+                [{ text: "OK" }]
+            );
+        }
+    } finally {
+        setSelectedCommentId(null);
+    }
+};
+
+
+  const handleCommentUpdateSubmit = async (commentId, postId) => {
+    const token = await AsyncStorage.getItem("token");
+    console.log("-------------respone---------------", token );
+    if (!token) {
+      Alert.alert(
+        "Thông báo",
+        "Bạn cần đăng nhập để thực hiện thao tác này.",
+        [{ text: "OK", onPress: () => navigation.navigate("Login") }]
+      );
+      return;
+    }
+  
+    try {
+      const formData = new FormData();
+      formData.append('comment_id', commentId);
+      formData.append('content', editingCommentText);
+  
+      const response = await APIs.post(`/posts/${postId}/update-comment/`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+  
+      const updatedComment = response.data;
+  
+      setComments((currentComments) => {
+        return {
+          ...currentComments,
+          [postId]: currentComments[postId].map(comment =>
+            comment.id === updatedComment.id ? updatedComment : comment
+          )
+        };
+      });
+  
+      setSelectedComment(null);
+      setEditingCommentText("");
+    } catch (error) {
+      console.error('Error updating comment:', error);
+    }
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <View style={MyStyles.container}>
@@ -309,6 +452,7 @@ const Post = () => {
               />
               <Card.Content>
                 <Text>{p.content}</Text>
+
                 {p.media.length > 0
                   && (
                     <Image style={MyStyles.media} source={{ uri: p.media[0].file }} />
@@ -363,17 +507,38 @@ const Post = () => {
                       {comment.user.first_name} {comment.user.last_name}
                     </Text>
                     {selectedComment && selectedComment.id === comment.id ? (
-                      <TextInput
-                        style={styles.commentInput}
-                        value={editingCommentText}
-                        onChangeText={setEditingCommentText}
-                      />
+                      <View style={styles.editingCommentContainer}>
+                        <TextInput
+                          style={styles.commentInput}
+                          value={editingCommentText}
+                          onChangeText={setEditingCommentText}
+                        />
+                        <Button mode="contained" onPress={() => handleCommentUpdateSubmit(comment.id, p.id)}>
+                          Cập nhật
+                        </Button>
+                      </View>
                     ) : (
                       <Text>{comment.content}</Text>
                     )}
                   </View>
+                  <Menu
+                  visible={selectedCommentId === comment.id}
+                
+                    
+                  
+                    onDismiss={() => setSelectedCommentId(null)}
+                    anchor={
+                      <TouchableOpacity onPress={() =>  setSelectedCommentId(comment.id)}>
+                        <Icon name="dots-vertical" size={20} />
+                      </TouchableOpacity>
+                    }
+                  >
+                    <Menu.Item onPress={() => handleEditComment(comment.id, p.id)} title="Chỉnh sửa" />
+                    <Menu.Item onPress={() => handleDeleteComment(comment.id, p.id)} title="Xóa" />
+                  </Menu>
                 </View>
               ))}
+
             </Card>
           );
         })}
@@ -405,6 +570,11 @@ const styles = StyleSheet.create({
     flex: 1,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd'
+  },
+  editingCommentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
   }
 });
 

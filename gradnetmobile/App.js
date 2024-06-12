@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Provider as PaperProvider } from 'react-native-paper';
 import { MyDispatcherContext, MyUserContext } from "./configs/Context";
 import { MyUserReducer } from "./configs/Reducers";
 import Post from "./components/posts/Post";
@@ -13,37 +14,31 @@ import ProfileScreen from "./components/screens/ProfileScreen";
 import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
 import { Home, Home2, LoginCurve, Profile, Profile2User } from "iconsax-react-native";
 
-
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
-
 
 const MyTab = () => {
   return (
     <Tab.Navigator screenOptions={
       ({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
-              let icon, variant;
+              let icon;
 
               switch (route.name) {
                   case "Post":
-                      variant = focused ? 'Bold' : 'Outline'
                       icon = <Home2 color={color} size={size} />
                       break;
                   case "Profile":
-                      variant = focused ? 'Bold' : 'Outline'
                       icon = <Profile2User color={color} size={size} />
                       break;
                   case "Register":
-                      variant = focused ? 'Bold' : 'Outline'
                       icon = <LoginCurve color={color} size={size} />
                       break;
                   case "Login":
-                      variant = focused ? 'Bold' : 'Outline'
                       icon = <LoginCurve color={color} size={size} />
                       break;
                   default:
-                      variant = focused ? 'Bold' : 'Outline'
+                      icon = null;
               }
 
               return icon;
@@ -56,8 +51,7 @@ const MyTab = () => {
       <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen name="Register" component={Register} />
       <Tab.Screen name="Login" component={Login} />
-      
-  </ Tab.Navigator>
+  </Tab.Navigator>
   );
 };
 
@@ -74,20 +68,19 @@ const MyStack = () => {
   );
 };
 
-
 const App = () => {
   const [user, dispatch] = useReducer(MyUserReducer, null);
   return (
-    <NavigationContainer>
-      <MyUserContext.Provider value={user}>
-        <MyDispatcherContext.Provider value={dispatch}>
-          <MyTab />
-        </MyDispatcherContext.Provider>
-      </MyUserContext.Provider>
-    </NavigationContainer>
+    <PaperProvider>
+      <NavigationContainer>
+        <MyUserContext.Provider value={user}>
+          <MyDispatcherContext.Provider value={dispatch}>
+            <MyTab />
+          </MyDispatcherContext.Provider>
+        </MyUserContext.Provider>
+      </NavigationContainer>
+    </PaperProvider>
   );
 };
 
 export default App;
-
-
