@@ -24,6 +24,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import CreatePost from "./CreatePost";
 
+
+
+
+
 // Icon cảm xúc
 export const reactions = [
   { id: 1, name: 'thumb-up-outline', label: 'Thích', color: '#3b5998' },
@@ -78,50 +82,54 @@ const Post = () => {
       if (!token) {
         throw new Error("Token not found");
       }
-
+  
       const postsWithReactionsAndComments = await Promise.all(
         postIds.map(async (postId) => {
           try {
-            const reactionsUrl = `${endpoints.posts}/${postId}/get-actions/`;
-            console.log(`Fetching reactions from ${reactionsUrl}`);
-            const reactionsRes = await APIs.get(reactionsUrl, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            const reactions = reactionsRes.data;
-            console.log(`Reactions for post ${postId}:`, reactions);
-
+          //   const reactionsUrl = `${endpoints.posts}/${postId}/get-actions/`;
+          //   const reactionsRes = await APIs.get(reactionsUrl, {
+          //     headers: {
+          //       Authorization: `Bearer ${token}`,
+          //       'Content-Type': 'application/json'
+          //     }
+          //   });
+            // const reactions = reactionsRes.data;
+  
             const commentsUrl = `${endpoints.posts}/${postId}/get-comments/`;
-            console.log(`Fetching comments from ${commentsUrl}`);
             const commentsRes = await APIs.get(commentsUrl, {
               headers: {
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json'
               }
             });
-            const comments = commentsRes.data;
-            console.log(`Comments for post ${postId}:`, comments);
-
+            const comments = commentsRes.data.results;
+  
             return {
               postId,
-              reactions,
+              // reactions,
               comments,
             };
           } catch (ex) {
             console.error(`Failed to fetch data for post ${postId}:`, ex);
             return {
               postId,
-              reactions: [],
+              // reactions: [],
               comments: [],
             };
           }
         })
       );
-
-      setPosts((currentPosts) =>
-        currentPosts.map((post) => {
+  
+      setComments((currentComments) => {
+        const newComments = { ...currentComments };
+        postsWithReactionsAndComments.forEach(({ postId, comments }) => {
+          newComments[postId] = comments;
+        });
+        return newComments;
+      });
+  
+      setPosts((currentPosts) => {
+        return currentPosts.map((post) => {
           const postData = postsWithReactionsAndComments.find(
             (data) => data.postId === post.id
           );
@@ -129,16 +137,16 @@ const Post = () => {
             return {
               ...post,
               reactions: postData.reactions,
-              comments: postData.comments,
             };
           }
           return post;
-        })
-      );
+        });
+      });
     } catch (ex) {
       console.error("Failed to fetch reactions and comments:", ex);
     }
   };
+  
 
   useEffect(() => {
     loadPosts();
@@ -207,7 +215,7 @@ const Post = () => {
           return p;
         });
       });
-
+      
       // Update the postReactions state to show the selected reaction or null if unliked
       setPostReactions((current) => {
         if (updatedAction.is_active) {
@@ -288,91 +296,46 @@ const Post = () => {
     }
   };
 
-  const [selectedCommentId, setSelectedCommentId] = useState(null);////
-
   const handleEditComment = (commentId, postId) => {
-    setSelectedCommentId(commentId);////
-    const commentToEdit = comments[postId].find(comment => comment.id === commentId);
-    if (commentToEdit) {
-      setSelectedComment(commentToEdit);
-      setEditingCommentText(commentToEdit.content);
-    }
+    const comment = comments[postId].find(comment => comment.id === commentId);
+    setSelectedComment(comment);
+    setEditingCommentText(comment.content);
   };
 
+  const [selectedCommentId, setSelectedCommentId] = useState(null);////
 
-
-
-
-
-
-const handleDeleteComment = async (commentId, postId, ) => {
+  const handleDeleteComment = async (comment_id, post_id,) => {
     const token = await AsyncStorage.getItem("token");
-    console.log("------------re---------", token);
 
     if (!token) {
-        Alert.alert(
-            "Thông báo",
-            "Bạn cần đăng nhập để thực hiện thao tác này.",
-            [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-        );
-        return;
+      console.error("Người dùng chưa đăng nhập");
+      return;
     }
 
     try {
-        const formData = new FormData();
-        formData.append('comment_id', commentId);
-  
-        console.log('FormData:', formData);
-
-        const api = authAPI(token);
-        const response = await api({
-            method: 'DELETE',
-            url: `/posts/${postId}/delete-comment/`,
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'multipart/form-data',
-            },
-            data: formData,
-        });
-
-        console.log("Response:", response);
-
-        if (response.status === 204) {
-            setComments((currentComments) => {
-                return {
-                    ...currentComments,
-                    [postId]: currentComments[postId].filter(comment => comment.id !== commentId)
-                };
-            });
+      const response = await authAPI(token).delete(
+        endpoints["delete-comment"](post_id),
+        {
+          data: { comment_id: comment_id },
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
+      );
+
+      
+
+      // Alert.alert("Success", response.data.message);
     } catch (error) {
-        if (error.response) {
-            console.error('Error response data:', error.response.data);
-            console.error('Error response status:', error.response.status);
-            console.error('Error response headers:', error.response.headers);
-        } else if (error.request) {
-            console.error('Error request:', error.request);
-        } else {
-            console.error('Error message:', error.message);
-        }
+      setComments((currentComments) => ({
+        ...currentComments,
+        [post_id]: currentComments[post_id].filter(comment => comment.id !== comment_id)
+      }));
 
-        if (error.response && error.response.status === 401) {
-            Alert.alert(
-                "Unauthorized",
-                "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.",
-                [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-            );
-        } else {
-            Alert.alert(
-                "Network Error",
-                "Có lỗi xảy ra khi kết nối đến server. Vui lòng kiểm tra kết nối mạng của bạn và thử lại.",
-                [{ text: "OK" }]
-            );
-        }
-    } finally {
-        setSelectedCommentId(null);
+      await fetchReactionsAndComments([post_id]);
+      
     }
-};
+  };
 
 
   const handleCommentUpdateSubmit = async (commentId, postId) => {
@@ -500,44 +463,42 @@ const handleDeleteComment = async (commentId, postId, ) => {
                 </View>
               )}
               {comments[p.id] && comments[p.id].map((comment) => (
-                <View key={comment.id} style={styles.commentContainer}>
-                  <Avatar.Image size={24} source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
-                  <View style={styles.commentContent}>
-                    <Text style={styles.commentUserName}>
-                      {comment.user.first_name} {comment.user.last_name}
-                    </Text>
-                    {selectedComment && selectedComment.id === comment.id ? (
-                      <View style={styles.editingCommentContainer}>
-                        <TextInput
-                          style={styles.commentInput}
-                          value={editingCommentText}
-                          onChangeText={setEditingCommentText}
-                        />
-                        <Button mode="contained" onPress={() => handleCommentUpdateSubmit(comment.id, p.id)}>
-                          Cập nhật
-                        </Button>
-                      </View>
-                    ) : (
-                      <Text>{comment.content}</Text>
-                    )}
-                  </View>
-                  <Menu
-                  visible={selectedCommentId === comment.id}
-                
-                    
-                  
-                    onDismiss={() => setSelectedCommentId(null)}
-                    anchor={
-                      <TouchableOpacity onPress={() =>  setSelectedCommentId(comment.id)}>
-                        <Icon name="dots-vertical" size={20} />
-                      </TouchableOpacity>
-                    }
-                  >
-                    <Menu.Item onPress={() => handleEditComment(comment.id, p.id)} title="Chỉnh sửa" />
-                    <Menu.Item onPress={() => handleDeleteComment(comment.id, p.id)} title="Xóa" />
-                  </Menu>
-                </View>
-              ))}
+  <View key={comment.id} style={styles.commentContainer}>
+    <Avatar.Image size={24} source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
+    <View style={styles.commentContent}>
+      <Text style={styles.commentUserName}>
+        {comment.user.first_name} {comment.user.last_name}
+      </Text>
+      {selectedComment && selectedComment.id === comment.id ? (
+        <View style={styles.editingCommentContainer}>
+          <TextInput
+            style={styles.commentInput}
+            value={editingCommentText}
+            onChangeText={setEditingCommentText}
+          />
+          <Button mode="contained" onPress={() => handleCommentUpdateSubmit(comment.id, p.id)}>
+            Cập nhật
+          </Button>
+        </View>
+      ) : (
+        <Text>{comment.content}</Text>
+      )}
+    </View>
+    <Menu
+      visible={selectedCommentId === comment.id}
+      onDismiss={() => setSelectedCommentId(null)}
+      anchor={
+        <TouchableOpacity onPress={() => setSelectedCommentId(comment.id)}>
+          <Icon name="dots-vertical" size={20} />
+        </TouchableOpacity>
+      }
+    >
+      <Menu.Item onPress={() => handleEditComment(comment.id, p.id)} title="Chỉnh sửa" />
+      <Menu.Item onPress={() => handleDeleteComment(comment.id, p.id)} title="Xóa" />
+    </Menu>
+  </View>
+))}
+
 
             </Card>
           );

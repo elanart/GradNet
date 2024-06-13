@@ -87,27 +87,27 @@ WSGI_APPLICATION = 'gradnet.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#     'ENGINE': 'django.db.backends.mysql',
-#     'NAME': 'gradnet',
-#     'USER': 'root',
-#     'PASSWORD': 'lelan2563',
-#     'HOST': '' # mặc định localhost
-#     }
-# }
+DATABASES = {
+    'default': {
+    'ENGINE': 'django.db.backends.mysql',
+    'NAME': 'gradnet',
+    'USER': 'root',
+    'PASSWORD': 'Abc@123',
+    'HOST': '' # mặc định localhost
+    }
+}
 
 import os
-
-DATABASES = {
-    "default": {
-    "ENGINE": "django.db.backends.postgresql_psycopg2",
-    "NAME": os.getenv("POSTGRES_DATABASE"),
-    "USER": os.getenv("POSTGRES_USER"),
-    "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-    "HOST": os.getenv("POSTGRES_HOST"),
-    },
-}
+#
+# DATABASES = {
+#     "default": {
+#     "ENGINE": "django.db.backends.postgresql_psycopg2",
+#     "NAME": os.getenv("POSTGRES_DATABASE"),
+#     "USER": os.getenv("POSTGRES_USER"),
+#     "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+#     "HOST": os.getenv("POSTGRES_HOST"),
+#     },
+# }
 
 
 # Password validation

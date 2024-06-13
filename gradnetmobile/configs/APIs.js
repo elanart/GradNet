@@ -12,6 +12,7 @@ export const endpoints = {
   login: "/o/token/",
   "current-user": "/users/current-user",
   register: "/users/",
+  "delete-comment": (post_id) => `/posts/${post_id}/delete-comment/`,
 
   
 };

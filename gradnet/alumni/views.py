@@ -1,3 +1,5 @@
+import pdb
+
 from django.shortcuts import render
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -176,10 +178,13 @@ class PostViewSet(viewsets.ViewSet,
     @action(methods=['delete'], url_path='delete-comment', detail=True)
     def delete_comment(self, request, pk=None):
         post = self.get_object()
+        pdb.set_trace()
         comment_id = request.data.get('comment_id')
         comment = get_object_or_404(Comment, id=comment_id, post=post)
         comment.delete()
         return Response({'status': 'Comment deleted'}, status=status.HTTP_204_NO_CONTENT)
+
+
 
     @action(methods=['post'], url_path='update-comment', detail=True)
     def update_comment(self, request, pk):
