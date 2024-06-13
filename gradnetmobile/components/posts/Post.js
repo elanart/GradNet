@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Image,
   ScrollView,
@@ -7,31 +7,32 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
-  StyleSheet
+  StyleSheet,
 } from "react-native";
 import MyStyles from "../../styles/MyStyles"; // Assuming MyStyles exists
-import APIs, { endpoints } from "../../configs/APIs";
+import APIs, { authAPI, endpoints } from "../../configs/APIs";
 import {
   ActivityIndicator,
   Card,
   Searchbar,
   Avatar,
   Button,
-  Menu
+  Menu,
 } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import CreatePost from "./CreatePost";
+import { MyUserContext } from "../../configs/Context";
 
 // Icon cảm xúc
 export const reactions = [
-  { id: 1, name: 'thumb-up-outline', label: 'Thích', color: '#3b5998' },
-  { id: 2, name: 'heart-outline', label: 'Yêu', color: '#e0245e' },
-  { id: 3, name: 'emoticon-happy-outline', label: 'Haha', color: '#f7b125' },
-  { id: 4, name: 'emoticon-surprised-outline', label: 'Wow', color: '#ffac33' },
-  { id: 5, name: 'emoticon-sad-outline', label: 'Buồn', color: '#1c1e21' },
-  { id: 6, name: 'emoticon-angry-outline', label: 'Phẫn nộ', color: '#d52834' },
+  { id: 1, name: "thumb-up-outline", label: "Thích", color: "#3b5998" },
+  { id: 2, name: "heart-outline", label: "Yêu", color: "#e0245e" },
+  { id: 3, name: "emoticon-happy-outline", label: "Haha", color: "#f7b125" },
+  { id: 4, name: "emoticon-surprised-outline", label: "Wow", color: "#ffac33" },
+  { id: 5, name: "emoticon-sad-outline", label: "Buồn", color: "#1c1e21" },
+  { id: 6, name: "emoticon-angry-outline", label: "Phẫn nộ", color: "#d52834" },
 ];
 
 const Post = () => {
@@ -48,6 +49,7 @@ const Post = () => {
   const [commentText, setCommentText] = useState(""); // Track the current comment text
   const [selectedComment, setSelectedComment] = useState(null); // Selected comment for edit/delete
   const [editingCommentText, setEditingCommentText] = useState(""); // Text of the comment being edited
+  const [menuVisible, setMenuVisible] = useState(false); // Track menu visibility
 
   const loadPosts = async () => {
     if (page > 0) {
@@ -61,7 +63,7 @@ const Post = () => {
         if (res.data.next === null) setPage(0);
 
         // Lấy phản ứng và bình luận cho các bài viết
-        const postIds = res.data.results.map(post => post.id);
+        const postIds = res.data.results.map((post) => post.id);
         await fetchReactionsAndComments(postIds);
       } catch (ex) {
         console.error(ex);
@@ -74,33 +76,48 @@ const Post = () => {
   const fetchReactionsAndComments = async (postIds) => {
     try {
       const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        throw new Error("Token not found");
+      }
+
       const postsWithReactionsAndComments = await Promise.all(
         postIds.map(async (postId) => {
-          // Fetch reactions
-          const reactionsUrl = `${endpoints.posts}/${postId}/get-actions/`;
-          const reactionsRes = await APIs.get(reactionsUrl, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-          const reactions = reactionsRes.data;
+          try {
+            const reactionsUrl = `${endpoints.posts}/${postId}/get-actions/`;
+            // console.log(`Fetching reactions from ${reactionsUrl}`);
+            const reactionsRes = await APIs.get(reactionsUrl, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+            const reactions = reactionsRes.data;
+            // console.log(`Reactions for post ${postId}:`, reactions);
 
-          // Fetch comments
-          const commentsUrl = `${endpoints.posts}/${postId}/get-comments/`;
-          const commentsRes = await APIs.get(commentsUrl, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-          const comments = commentsRes.data;
-          console.log(comments);
-          return {
-            postId,
-            reactions,
-            comments,
-          };
+            const commentsUrl = `${endpoints.posts}/${postId}/get-comments/`;
+            // console.log(`Fetching comments from ${commentsUrl}`);
+            const commentsRes = await APIs.get(commentsUrl, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+            const comments = commentsRes.data;
+            // console.log(`Comments for post ${postId}:`, comments);
+
+            return {
+              postId,
+              reactions,
+              comments,
+            };
+          } catch (ex) {
+            console.error(`Failed to fetch data for post ${postId}:`, ex);
+            return {
+              postId,
+              reactions: [],
+              comments: [],
+            };
+          }
         })
       );
 
@@ -116,9 +133,7 @@ const Post = () => {
               comments: postData.comments,
             };
           }
-          console.log(postData)
           return post;
-          
         })
       );
     } catch (ex) {
@@ -130,10 +145,16 @@ const Post = () => {
     loadPosts();
   }, [keyword, page]);
 
-  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }) => {
+  const isCloseToBottom = ({
+    layoutMeasurement,
+    contentOffset,
+    contentSize,
+  }) => {
     const paddingToBottom = 20;
-    return layoutMeasurement.height + contentOffset.y >=
-      contentSize.height - paddingToBottom;
+    return (
+      layoutMeasurement.height + contentOffset.y >=
+      contentSize.height - paddingToBottom
+    );
   };
 
   const loadMore = ({ nativeEvent }) => {
@@ -145,30 +166,34 @@ const Post = () => {
   const handleAction = async (actionLabel, post) => {
     const token = await AsyncStorage.getItem("token");
     if (!token) {
-      Alert.alert(
-        "Thông báo",
-        "Bạn cần đăng nhập để thực hiện thao tác này.",
-        [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-      );
+      Alert.alert("Thông báo", "Bạn cần đăng nhập để thực hiện thao tác này.", [
+        { text: "OK", onPress: () => navigation.navigate("Login") },
+      ]);
       return;
     }
 
     try {
-      const selectedReaction = reactions.find(reaction => reaction.label === actionLabel);
+      const selectedReaction = reactions.find(
+        (reaction) => reaction.label === actionLabel
+      );
       if (!selectedReaction) {
         console.error(`Không tìm thấy phản ứng cho hành động: ${actionLabel}`);
         return;
       }
 
       const formData = new FormData();
-      formData.append('type', selectedReaction.id);
+      formData.append("type", selectedReaction.id);
 
-      const response = await APIs.post(`/posts/${post.id}/add-action/`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
+      const response = await APIs.post(
+        `/posts/${post.id}/add-action/`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
         }
-      });
+      );
 
       const updatedAction = response.data;
 
@@ -178,12 +203,14 @@ const Post = () => {
             let updatedReactions;
             if (updatedAction.is_active) {
               updatedReactions = Array.isArray(p.reactions)
-                ? p.reactions.map(r => r.user.id === updatedAction.user.id ? updatedAction : r)
+                ? p.reactions.map((r) =>
+                    r.user.id === updatedAction.user.id ? updatedAction : r
+                  )
                 : [updatedAction];
               p.reacted = true;
             } else {
               updatedReactions = Array.isArray(p.reactions)
-                ? p.reactions.filter(r => r.user.id !== updatedAction.user.id)
+                ? p.reactions.filter((r) => r.user.id !== updatedAction.user.id)
                 : [];
               p.reacted = false;
             }
@@ -199,7 +226,7 @@ const Post = () => {
         if (updatedAction.is_active) {
           return {
             ...current,
-            [post.id]: selectedReaction
+            [post.id]: selectedReaction,
           };
         } else {
           const { [post.id]: _, ...rest } = current;
@@ -207,7 +234,7 @@ const Post = () => {
         }
       });
     } catch (error) {
-      console.error('Error updating reactions:', error);
+      console.error("Error updating reactions:", error);
     }
 
     setShowReactions(false);
@@ -239,45 +266,129 @@ const Post = () => {
   const handleCommentSubmit = async (postId) => {
     const token = await AsyncStorage.getItem("token");
     if (!token) {
-      Alert.alert(
-        "Thông báo",
-        "Bạn cần đăng nhập để thực hiện thao tác này.",
-        [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-      );
+      Alert.alert("Thông báo", "Bạn cần đăng nhập để thực hiện thao tác này.", [
+        { text: "OK", onPress: () => navigation.navigate("Login") },
+      ]);
       return;
     }
 
     try {
       const formData = new FormData();
-      formData.append('content', commentText);
+      formData.append("content", commentText);
 
-      const response = await APIs.post(`/posts/${postId}/add-comment/`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
+      const response = await APIs.post(
+        `/posts/${postId}/add-comment/`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
         }
-      });
+      );
 
       const newComment = response.data;
 
       setComments((currentComments) => {
         return {
           ...currentComments,
-          [postId]: [...(currentComments[postId] || []), newComment]
+          [postId]: [...(currentComments[postId] || []), newComment],
         };
       });
 
       setCommentText("");
       setCommentingPostId(null);
     } catch (error) {
-      console.error('Error submitting comment:', error);
+      console.error("Error submitting comment:", error);
+    }
+  };
+
+  const [selectedCommentId, setSelectedCommentId] = useState(null); ////
+
+  const handleEditComment = (commentId, postId) => {
+    setSelectedCommentId(commentId); ////
+    const commentToEdit = comments[postId].find(
+      (comment) => comment.id === commentId
+    );
+    if (commentToEdit) {
+      setSelectedComment(commentToEdit);
+      setEditingCommentText(commentToEdit.content);
+    }
+  };
+
+  const handleDeleteComment = async (comment_id, post_id) => {
+    const token = await AsyncStorage.getItem("token");
+
+    if (!token) {
+      console.error("Người dùng chưa đăng nhập");
+      return;
+    }
+
+    try {
+      const response = await authAPI(token).delete(
+        endpoints["delete-comment"](post_id),
+        {
+          data: { comment_id: comment_id },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Alert.alert("Success", response.data.message);
+    } catch (error) {
+      //fetch lai du lieu comment
+    }
+  };
+
+  const handleCommentUpdateSubmit = async (commentId, postId) => {
+    const token = await AsyncStorage.getItem("token");
+    // console.log("-------------respone---------------", token );
+    if (!token) {
+      Alert.alert("Thông báo", "Bạn cần đăng nhập để thực hiện thao tác này.", [
+        { text: "OK", onPress: () => navigation.navigate("Login") },
+      ]);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("comment_id", commentId);
+      formData.append("content", editingCommentText);
+
+      const response = await APIs.post(
+        `/posts/${postId}/update-comment/`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const updatedComment = response.data;
+
+      setComments((currentComments) => {
+        return {
+          ...currentComments,
+          [postId]: currentComments[postId].map((comment) =>
+            comment.id === updatedComment.id ? updatedComment : comment
+          ),
+        };
+      });
+
+      setSelectedComment(null);
+      setEditingCommentText("");
+    } catch (error) {
+      console.error("Error updating comment:", error);
     }
   };
 
   return (
     <View style={{ flex: 1 }}>
       <View style={MyStyles.container}>
-        <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>
+        <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 16 }}>
           DANH MỤC BÀI VIẾT
         </Text>
       </View>
@@ -309,20 +420,48 @@ const Post = () => {
               />
               <Card.Content>
                 <Text>{p.content}</Text>
-                {p.media.length > 0
-                  && (
-                    <Image style={MyStyles.media} source={{ uri: p.media[0].file }} />
-                  )}
+
+                {p.media.length > 0 && (
+                  <Image
+                    style={MyStyles.media}
+                    source={{ uri: p.media[0].file }}
+                  />
+                )}
               </Card.Content>
               <Card.Actions style={MyStyles.cardActions}>
                 <View style={MyStyles.actionContainer}>
-                  <TouchableOpacity style={MyStyles.actionButton} onPress={() => handleLikeButtonPress(p)}>
-                    <Icon name={currentReaction ? currentReaction.name : "thumb-up-outline"} size={20} color={currentReaction ? currentReaction.color : undefined} />
-                    <Text style={[MyStyles.actionText, { color: currentReaction ? currentReaction.color : undefined }]}>
+                  <TouchableOpacity
+                    style={MyStyles.actionButton}
+                    onPress={() => handleLikeButtonPress(p)}
+                  >
+                    <Icon
+                      name={
+                        currentReaction
+                          ? currentReaction.name
+                          : "thumb-up-outline"
+                      }
+                      size={20}
+                      color={
+                        currentReaction ? currentReaction.color : undefined
+                      }
+                    />
+                    <Text
+                      style={[
+                        MyStyles.actionText,
+                        {
+                          color: currentReaction
+                            ? currentReaction.color
+                            : undefined,
+                        },
+                      ]}
+                    >
                       {currentReaction ? currentReaction.label : "Thích"}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={MyStyles.actionButton} onPress={() => handleCommentButtonPress(p.id)}>
+                  <TouchableOpacity
+                    style={MyStyles.actionButton}
+                    onPress={() => handleCommentButtonPress(p.id)}
+                  >
                     <Icon name="comment-outline" size={20} />
                     <Text style={MyStyles.actionText}>Bình luận</Text>
                   </TouchableOpacity>
@@ -334,9 +473,19 @@ const Post = () => {
                 {showReactions && selectedPost && selectedPost.id === p.id && (
                   <View style={MyStyles.reactionsContainer}>
                     {reactions.map((reaction) => (
-                      <TouchableOpacity key={reaction.label} style={MyStyles.reactionButton} onPress={() => handleAction(reaction.label, p)}>
-                        <Icon name={reaction.name} size={30} color={reaction.color} />
-                        <Text style={MyStyles.reactionText}>{reaction.label}</Text>
+                      <TouchableOpacity
+                        key={reaction.label}
+                        style={MyStyles.reactionButton}
+                        onPress={() => handleAction(reaction.label, p)}
+                      >
+                        <Icon
+                          name={reaction.name}
+                          size={30}
+                          color={reaction.color}
+                        />
+                        <Text style={MyStyles.reactionText}>
+                          {reaction.label}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -350,30 +499,68 @@ const Post = () => {
                     value={commentText}
                     onChangeText={setCommentText}
                   />
-                  <Button mode="contained" onPress={() => handleCommentSubmit(p.id)}>
+                  <Button
+                    mode="contained"
+                    onPress={() => handleCommentSubmit(p.id)}
+                  >
                     Bình luận
                   </Button>
                 </View>
               )}
-              {comments[p.id] && comments[p.id].map((comment) => (
-                <View key={comment.id} style={styles.commentContainer}>
-                  <Avatar.Image size={24} source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
-                  <View style={styles.commentContent}>
-                    <Text style={styles.commentUserName}>
-                      {comment.user.first_name} {comment.user.last_name}
-                    </Text>
-                    {selectedComment && selectedComment.id === comment.id ? (
-                      <TextInput
-                        style={styles.commentInput}
-                        value={editingCommentText}
-                        onChangeText={setEditingCommentText}
+              {comments[p.id] &&
+                comments[p.id].map((comment) => (
+                  <View key={comment.id} style={styles.commentContainer}>
+                    <Avatar.Image
+                      size={24}
+                      source={{ uri: comment.user.avatar }}
+                      style={styles.commentAvatar}
+                    />
+                    <View style={styles.commentContent}>
+                      <Text style={styles.commentUserName}>
+                        {comment.user.first_name} {comment.user.last_name}
+                      </Text>
+                      {selectedComment && selectedComment.id === comment.id ? (
+                        <View style={styles.editingCommentContainer}>
+                          <TextInput
+                            style={styles.commentInput}
+                            value={editingCommentText}
+                            onChangeText={setEditingCommentText}
+                          />
+                          <Button
+                            mode="contained"
+                            onPress={() =>
+                              handleCommentUpdateSubmit(comment.id, p.id)
+                            }
+                          >
+                            Cập nhật
+                          </Button>
+                        </View>
+                      ) : (
+                        <Text>{comment.content}</Text>
+                      )}
+                    </View>
+                    <Menu
+                      visible={selectedCommentId === comment.id}
+                      onDismiss={() => setSelectedCommentId(null)}
+                      anchor={
+                        <TouchableOpacity
+                          onPress={() => setSelectedCommentId(comment.id)}
+                        >
+                          <Icon name="dots-vertical" size={20} />
+                        </TouchableOpacity>
+                      }
+                    >
+                      <Menu.Item
+                        onPress={() => handleEditComment(comment.id, p.id)}
+                        title="Chỉnh sửa"
                       />
-                    ) : (
-                      <Text>{comment.content}</Text>
-                    )}
+                      <Menu.Item
+                        onPress={() => handleDeleteComment(comment.id, p.id)}
+                        title="Xóa"
+                      />
+                    </Menu>
                   </View>
-                </View>
-              ))}
+                ))}
             </Card>
           );
         })}
@@ -390,22 +577,27 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#ddd"
+    borderBottomColor: "#ddd",
   },
   commentAvatar: {
-    marginRight: 8
+    marginRight: 8,
   },
   commentContent: {
-    flex: 1
+    flex: 1,
   },
   commentUserName: {
-    fontWeight: "bold"
+    fontWeight: "bold",
   },
   commentInput: {
     flex: 1,
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd'
-  }
+    borderBottomColor: "#ddd",
+  },
+  editingCommentContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
 });
 
 export default Post;

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+// custom hook này trì hoãn hành động cho đến khi user dừng nhập trong một khoảng thời gian delay.
+
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
 

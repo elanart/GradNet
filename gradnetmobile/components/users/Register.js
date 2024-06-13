@@ -41,6 +41,7 @@ const Register = ({ navigation }) => {
     },
   ];
 
+  // State để lưu trữ thông tin người dùng, lỗi, kiểm tra trạng thái loading
   const [user, setUser] = useState({});
   const [error, setError] = useState({});
   const [loading, setLoading] = useState(false);
@@ -49,14 +50,17 @@ const Register = ({ navigation }) => {
     confirm: true,
   });
 
+  // Gọi hook này để trì hoãn gửi request cho đến khi user dừng nhập trường username trong một khoảng thời gian 500.
   const usernameDebounce = useDebounce(user.username, 500);
 
+  // Kiểm tra username mỗi khi user thay đổi trường username
   useEffect(() => {
     if (usernameDebounce) {
       checkUserName(usernameDebounce);
     }
   }, [usernameDebounce]);
 
+  // Kiểm tra sự khác biệt giữa password và confirm
   useEffect(() => {
     if (user.password !== user.confirm) {
       setError((current) => ({ ...current, password: "Mật khẩu không khớp!" }));
@@ -68,20 +72,22 @@ const Register = ({ navigation }) => {
     }
   }, [user.password, user.confirm]);
 
+  // Hàm cập nhật sự thay đổi giá trị value của trường field
   const change = (value, field) => {
     setUser((current) => ({ ...current, [field]: value }));
-    if (field === "username" && value === "") {
-      setError((current) => {
-        const { username, ...newError } = current;
-        return newError;
-      });
-    }
-    if (field === "confirm" && value === "") {
-      setError((current) => {
-        const { password, ...newError } = current;
-        return newError;
-      });
-    }
+    // if (field === "username" && value === "") {
+    //   setError((current) => {
+    //     const { username, ...newError } = current;
+    //     return newError;
+    //   });
+    // }
+    // if (field === "confirm" && value === "") {
+    //   setError((current) => {
+    //     const { password, ...newError } = current;
+    //     return newError;
+    //   });
+    // }
+    setError({});
   };
 
   const checkUserName = async (username) => {
@@ -89,10 +95,12 @@ const Register = ({ navigation }) => {
       let res = await APIs.get(endpoints["check-username"], {
         params: { username },
       });
+      // Nếu username đã tồn tại = 200
       if (res.status === 200) {
         setError((current) => ({ ...current, username: res.data.error }));
       }
     } catch (ex) {
+      // Xóa thuộc tính username khỏi currentError.
       setError((current) => {
         const { username, ...newError } = current;
         return newError;
@@ -100,9 +108,11 @@ const Register = ({ navigation }) => {
     }
   };
 
+  // Lấy ảnh từ thư viện
   const picker = async () => {
     let { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
+      // "granted" (đã cấp phép)
       Alert.alert("Gradnet", "Permissions denied!");
     } else {
       const res = await ImagePicker.launchImageLibraryAsync();
@@ -111,7 +121,6 @@ const Register = ({ navigation }) => {
   };
 
   const register = async () => {
-    //
     let isError = false;
     for (let f of fields) {
       if (!user[f.field]) {
@@ -123,8 +132,8 @@ const Register = ({ navigation }) => {
       }
     }
 
+    // Nếu xuất hiện lỗi => thoát hàm
     if (isError) return;
-    //
 
     setLoading(true);
     try {
@@ -214,6 +223,16 @@ const Register = ({ navigation }) => {
               style={{ width: 100, height: 100 }}
             />
           )}
+
+          <HelperText
+            style={{
+              fontSize: 16,
+            }}
+            type="error"
+            visible={!!error}
+          >
+            {error}
+          </HelperText>
 
           <FormButton
             title="Đăng ký tài khoản"
