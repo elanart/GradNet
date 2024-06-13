@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Image,
   ScrollView,
@@ -23,17 +23,8 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import CreatePost from "./CreatePost";
-import { MyUserContext } from "../../configs/Context";
-
-// Icon cảm xúc
-export const reactions = [
-  { id: 1, name: "thumb-up-outline", label: "Thích", color: "#3b5998" },
-  { id: 2, name: "heart-outline", label: "Yêu", color: "#e0245e" },
-  { id: 3, name: "emoticon-happy-outline", label: "Haha", color: "#f7b125" },
-  { id: 4, name: "emoticon-surprised-outline", label: "Wow", color: "#ffac33" },
-  { id: 5, name: "emoticon-sad-outline", label: "Buồn", color: "#1c1e21" },
-  { id: 6, name: "emoticon-angry-outline", label: "Phẫn nộ", color: "#d52834" },
-];
+import { PostStyles } from "./Styles";
+import { reactions } from "../../configs/constants";
 
 const Post = () => {
   const [posts, setPosts] = useState([]);
@@ -42,7 +33,8 @@ const Post = () => {
   const [page, setPage] = useState(1);
   const [showReactions, setShowReactions] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
-  const navigation = useNavigation();
+  const [editingPostContent, setEditingPostContent] = useState("");
+  const [selectedPostId, setSelectedPostId] = useState(null);
   const [postReactions, setPostReactions] = useState({}); // Track reactions for each post
   const [commentingPostId, setCommentingPostId] = useState(null); // Track which post is being commented
   const [comments, setComments] = useState({}); // Track comments for each post
@@ -50,11 +42,21 @@ const Post = () => {
   const [selectedComment, setSelectedComment] = useState(null); // Selected comment for edit/delete
   const [editingCommentText, setEditingCommentText] = useState(""); // Text of the comment being edited
   const [menuVisible, setMenuVisible] = useState(false); // Track menu visibility
+  const [selectedCommentId, setSelectedCommentId] = useState(null);
 
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    loadPosts();
+  }, [keyword, page]);
+
+  //======================Post==================================
+
+  // Nạp post
   const loadPosts = async () => {
     if (page > 0) {
       setLoading(true);
-      let url = `${endpoints.posts}?q=${keyword}&page=${page}`;
+      let url = `${endpoints["posts"]}?q=${keyword}&page=${page}`;
       try {
         let res = await APIs.get(url);
         if (page === 1) setPosts(res.data.results);
@@ -73,78 +75,7 @@ const Post = () => {
     }
   };
 
-  const fetchReactionsAndComments = async (postIds) => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      if (!token) {
-        throw new Error("Token not found");
-      }
-
-      const postsWithReactionsAndComments = await Promise.all(
-        postIds.map(async (postId) => {
-          try {
-            const reactionsUrl = `${endpoints.posts}/${postId}/get-actions/`;
-            // console.log(`Fetching reactions from ${reactionsUrl}`);
-            const reactionsRes = await APIs.get(reactionsUrl, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            });
-            const reactions = reactionsRes.data;
-            // console.log(`Reactions for post ${postId}:`, reactions);
-
-            const commentsUrl = `${endpoints.posts}/${postId}/get-comments/`;
-            // console.log(`Fetching comments from ${commentsUrl}`);
-            const commentsRes = await APIs.get(commentsUrl, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            });
-            const comments = commentsRes.data;
-            // console.log(`Comments for post ${postId}:`, comments);
-
-            return {
-              postId,
-              reactions,
-              comments,
-            };
-          } catch (ex) {
-            console.error(`Failed to fetch data for post ${postId}:`, ex);
-            return {
-              postId,
-              reactions: [],
-              comments: [],
-            };
-          }
-        })
-      );
-
-      setPosts((currentPosts) =>
-        currentPosts.map((post) => {
-          const postData = postsWithReactionsAndComments.find(
-            (data) => data.postId === post.id
-          );
-          if (postData) {
-            return {
-              ...post,
-              reactions: postData.reactions,
-              comments: postData.comments,
-            };
-          }
-          return post;
-        })
-      );
-    } catch (ex) {
-      console.error("Failed to fetch reactions and comments:", ex);
-    }
-  };
-
-  useEffect(() => {
-    loadPosts();
-  }, [keyword, page]);
-
+  // Kiểm tra xem đã cuộn đến cuối danh sách chưa
   const isCloseToBottom = ({
     layoutMeasurement,
     contentOffset,
@@ -157,9 +88,157 @@ const Post = () => {
     );
   };
 
+  // Tải thêm bài viết khi cuộn đến cuối
   const loadMore = ({ nativeEvent }) => {
     if (!loading && page > 0 && isCloseToBottom(nativeEvent)) {
       setPage(page + 1);
+    }
+  };
+
+  // Hàm xử lý tạo post
+  const handlePostCreated = (newPost) => {
+    setPosts([newPost, ...posts]);
+  };
+
+  // Tìm kiếm post cần chỉnh sửa
+  const handleEditPost = (postId) => {
+    const post = posts.find((post) => post.id === postId);
+    setSelectedPost(post);
+    setEditingPostContent(post.content);
+  };
+
+  // Hàm xử lý event gửi cập nhật bài viết
+  const handlePostUpdateSubmit = async (postId) => {
+    const token = await AsyncStorage.getItem("token");
+    if (!token) {
+      console.error("Người dùng chưa đăng nhập");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("content", editingPostContent);
+
+      const response = await authAPI(token).patch(
+        `${endpoints["posts"]}/${postId}/`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      const updatedPost = response.data;
+
+      setPosts((currentPosts) => {
+        return currentPosts.map((post) =>
+          post.id === updatedPost.id ? updatedPost : post
+        );
+      });
+
+      setSelectedPost(null);
+      setEditingPostContent("");
+    } catch (error) {
+      console.error("Lỗi không thể cập nhật bài viết:", error);
+      Alert.alert(
+        "Không thể cập nhật bài viết",
+        "Xem lại nội dung cập nhật và quyền sở hữu bài viết"
+      );
+    }
+  };
+
+  // Hàm xử lý event xóa bài viết
+  const handleDeletePost = async (postId) => {
+    const token = await AsyncStorage.getItem("token");
+    if (!token) {
+      console.error("Người dùng chưa đăng nhập");
+      return;
+    }
+
+    try {
+      let url = `${endpoints["posts"]}/${postId}/`;
+      const response = await authAPI(token).delete(url);
+
+      setPosts((currentPosts) =>
+        currentPosts.filter((post) => post.id !== postId)
+      );
+    } catch (error) {
+      console.error("Lỗi không thể xóa bài viết:", error);
+      Alert.alert("Error", "Lỗi không thể xóa bài viết");
+    }
+  };
+
+  // =======================Action=======================
+
+  const fetchReactionsAndComments = async (postIds) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        throw new Error("Token not found");
+      }
+
+      const postsWithReactionsAndComments = await Promise.all(
+        postIds.map(async (postId) => {
+          try {
+            //   const reactionsUrl = `${endpoints.posts}/${postId}/get-actions/`;
+            //   const reactionsRes = await APIs.get(reactionsUrl, {
+            //     headers: {
+            //       Authorization: `Bearer ${token}`,
+            //       'Content-Type': 'application/json'
+            //     }
+            //   });
+            // const reactions = reactionsRes.data;
+
+            const commentsUrl = `${endpoints.posts}/${postId}/get-comments/`;
+            const commentsRes = await APIs.get(commentsUrl, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+            const comments = commentsRes.data.results;
+
+            return {
+              postId,
+              // reactions,
+              comments,
+            };
+          } catch (ex) {
+            console.error(`Failed to fetch data for post ${postId}:`, ex);
+            return {
+              postId,
+              // reactions: [],
+              comments: [],
+            };
+          }
+        })
+      );
+
+      setComments((currentComments) => {
+        const newComments = { ...currentComments };
+        postsWithReactionsAndComments.forEach(({ postId, comments }) => {
+          newComments[postId] = comments;
+        });
+        return newComments;
+      });
+
+      setPosts((currentPosts) => {
+        return currentPosts.map((post) => {
+          const postData = postsWithReactionsAndComments.find(
+            (data) => data.postId === post.id
+          );
+          if (postData) {
+            return {
+              ...post,
+              reactions: postData.reactions,
+            };
+          }
+          return post;
+        });
+      });
+    } catch (ex) {
+      console.error("Failed to fetch reactions and comments:", ex);
     }
   };
 
@@ -255,20 +334,17 @@ const Post = () => {
     }
   };
 
-  const handlePostCreated = (newPost) => {
-    setPosts([newPost, ...posts]);
-  };
+  //====================Comment=============================
 
   const handleCommentButtonPress = (postId) => {
     setCommentingPostId(commentingPostId === postId ? null : postId);
   };
 
+  //Hàm xử lý event gửi comment
   const handleCommentSubmit = async (postId) => {
     const token = await AsyncStorage.getItem("token");
     if (!token) {
-      Alert.alert("Thông báo", "Bạn cần đăng nhập để thực hiện thao tác này.", [
-        { text: "OK", onPress: () => navigation.navigate("Login") },
-      ]);
+      console.error("Người dùng chưa đăng nhập");
       return;
     }
 
@@ -276,12 +352,11 @@ const Post = () => {
       const formData = new FormData();
       formData.append("content", commentText);
 
-      const response = await APIs.post(
-        `/posts/${postId}/add-comment/`,
+      const response = await authAPI(token).post(
+        endpoints["add-comment"](postId),
         formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         }
@@ -299,55 +374,24 @@ const Post = () => {
       setCommentText("");
       setCommentingPostId(null);
     } catch (error) {
-      console.error("Error submitting comment:", error);
+      console.error("Lỗi không thể gửi bình luận:", error);
     }
   };
 
-  const [selectedCommentId, setSelectedCommentId] = useState(null); ////
-
+  //Tìm kiếm comment cần xử lý
   const handleEditComment = (commentId, postId) => {
-    setSelectedCommentId(commentId); ////
-    const commentToEdit = comments[postId].find(
+    const comment = comments[postId].find(
       (comment) => comment.id === commentId
     );
-    if (commentToEdit) {
-      setSelectedComment(commentToEdit);
-      setEditingCommentText(commentToEdit.content);
-    }
+    setSelectedComment(comment);
+    setEditingCommentText(comment.content);
   };
 
-  const handleDeleteComment = async (comment_id, post_id) => {
-    const token = await AsyncStorage.getItem("token");
-
-    if (!token) {
-      console.error("Người dùng chưa đăng nhập");
-      return;
-    }
-
-    try {
-      const response = await authAPI(token).delete(
-        endpoints["delete-comment"](post_id),
-        {
-          data: { comment_id: comment_id },
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      // Alert.alert("Success", response.data.message);
-    } catch (error) {
-      //fetch lai du lieu comment
-    }
-  };
-
+  // Hàm xử lý event chỉnh sửa comment
   const handleCommentUpdateSubmit = async (commentId, postId) => {
     const token = await AsyncStorage.getItem("token");
-    // console.log("-------------respone---------------", token );
     if (!token) {
-      Alert.alert("Thông báo", "Bạn cần đăng nhập để thực hiện thao tác này.", [
-        { text: "OK", onPress: () => navigation.navigate("Login") },
-      ]);
+      console.error("Người dùng chưa đăng nhập");
       return;
     }
 
@@ -356,12 +400,11 @@ const Post = () => {
       formData.append("comment_id", commentId);
       formData.append("content", editingCommentText);
 
-      const response = await APIs.post(
-        `/posts/${postId}/update-comment/`,
+      const response = await authAPI(token).post(
+        endpoints["update-comment"](postId),
         formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         }
@@ -381,7 +424,38 @@ const Post = () => {
       setSelectedComment(null);
       setEditingCommentText("");
     } catch (error) {
-      console.error("Error updating comment:", error);
+      console.error("Lỗi không thể chỉnh sửa bình luận:", error);
+    }
+  };
+
+  //Hàm xử lý event xóa comment
+  const handleDeleteComment = async (comment_id, post_id) => {
+    const token = await AsyncStorage.getItem("token");
+
+    if (!token) {
+      console.error("Người dùng chưa đăng nhập");
+      return;
+    }
+
+    try {
+      const response = await authAPI(token).delete(
+        endpoints["delete-comment"](post_id),
+        {
+          data: { comment_id: comment_id },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    } catch (error) {
+      setComments((currentComments) => ({
+        ...currentComments,
+        [post_id]: currentComments[post_id].filter(
+          (comment) => comment.id !== comment_id
+        ),
+      }));
+
+      await fetchReactionsAndComments([post_id]);
     }
   };
 
@@ -417,17 +491,58 @@ const Post = () => {
                 left={() => (
                   <Avatar.Image size={40} source={{ uri: p.user.avatar }} />
                 )}
+                right={() => (
+                  <Menu
+                    visible={selectedPostId === p.id}
+                    onDismiss={() => setSelectedPostId(null)}
+                    anchor={
+                      <TouchableOpacity onPress={() => setSelectedPostId(p.id)}>
+                        <Icon name="dots-vertical" size={24} />
+                      </TouchableOpacity>
+                    }
+                  >
+                    <Menu.Item
+                      onPress={() => {
+                        handleEditPost(p.id);
+                        setSelectedPostId(null);
+                      }}
+                      title="Chỉnh sửa"
+                    />
+                    <Menu.Item
+                      onPress={() => handleDeletePost(p.id)}
+                      title="Xóa"
+                    />
+                  </Menu>
+                )}
               />
               <Card.Content>
-                <Text>{p.content}</Text>
-
-                {p.media.length > 0 && (
-                  <Image
-                    style={MyStyles.media}
-                    source={{ uri: p.media[0].file }}
-                  />
+                {selectedPost && selectedPost.id === p.id ? (
+                  <View>
+                    <TextInput
+                      value={editingPostContent}
+                      onChangeText={setEditingPostContent}
+                      style={{ marginBottom: 8 }}
+                    />
+                    <Button
+                      mode="contained"
+                      onPress={() => handlePostUpdateSubmit(p.id)}
+                    >
+                      Cập nhật bài viết
+                    </Button>
+                  </View>
+                ) : (
+                  <Text>{p.content}</Text>
                 )}
               </Card.Content>
+              {p.media.length > 0 && (
+                <Card.Cover
+                  source={{ uri: p.media[0].file }}
+                  resizeMode="cover"
+                />
+              )}
+
+              {/* Viết IU chỉnh sửa bài viết */}
+
               <Card.Actions style={MyStyles.cardActions}>
                 <View style={MyStyles.actionContainer}>
                   <TouchableOpacity
@@ -509,20 +624,20 @@ const Post = () => {
               )}
               {comments[p.id] &&
                 comments[p.id].map((comment) => (
-                  <View key={comment.id} style={styles.commentContainer}>
+                  <View key={comment.id} style={PostStyles.commentContainer}>
                     <Avatar.Image
                       size={24}
                       source={{ uri: comment.user.avatar }}
-                      style={styles.commentAvatar}
+                      style={PostStyles.commentAvatar}
                     />
-                    <View style={styles.commentContent}>
-                      <Text style={styles.commentUserName}>
+                    <View style={PostStyles.commentContent}>
+                      <Text style={PostStyles.commentUserName}>
                         {comment.user.first_name} {comment.user.last_name}
                       </Text>
                       {selectedComment && selectedComment.id === comment.id ? (
-                        <View style={styles.editingCommentContainer}>
+                        <View style={PostStyles.editingCommentContainer}>
                           <TextInput
-                            style={styles.commentInput}
+                            style={PostStyles.commentInput}
                             value={editingCommentText}
                             onChangeText={setEditingCommentText}
                           />
@@ -569,35 +684,5 @@ const Post = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  commentContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-  },
-  commentAvatar: {
-    marginRight: 8,
-  },
-  commentContent: {
-    flex: 1,
-  },
-  commentUserName: {
-    fontWeight: "bold",
-  },
-  commentInput: {
-    flex: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-  },
-  editingCommentContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-});
 
 export default Post;

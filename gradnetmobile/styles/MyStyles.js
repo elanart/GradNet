@@ -186,16 +186,15 @@ export default StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#ddd"
+    borderBottomColor: "#ddd",
   },
   commentAvatar: {
-    marginRight: 8
+    marginRight: 8,
   },
   commentContent: {
-    flex: 1
+    flex: 1,
   },
   commentUserName: {
-    fontWeight: "bold"
-  }
-  
+    fontWeight: "bold",
+  },
 });
