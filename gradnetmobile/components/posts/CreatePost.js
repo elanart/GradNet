@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -15,9 +14,11 @@ import { authAPI, endpoints } from "../../configs/APIs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
+import CreateNotification from "./CreateNotification";
 
 const CreatePost = ({ onPostCreated }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isNotificationModalVisible, setIsNotificationModalVisible] = useState(false);
   const [user, setUser] = useState(null);
   const navigation = useNavigation();
   const [selectedImageURI, setSelectedImageURI] = useState(null);
@@ -33,6 +34,10 @@ const CreatePost = ({ onPostCreated }) => {
     setSelectedImageURI(null);
     setSelectedVideoURI(null);
     setPostContent("");
+  };
+
+  const toggleNotificationModal = () => {
+    setIsNotificationModalVisible(!isNotificationModalVisible);
   };
 
   const fetchUserData = async () => {
@@ -65,8 +70,7 @@ const CreatePost = ({ onPostCreated }) => {
   const pickMedia = async (type) => {
     let permissionResult;
     if (type === "image") {
-      permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     } else if (type === "video") {
       permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     }
@@ -142,6 +146,11 @@ const CreatePost = ({ onPostCreated }) => {
     }
   };
 
+  const handleNotificationCreated = (notification) => {
+    // Xử lý khi thông báo được tạo
+    console.log("Thông báo đã tạo:", notification);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.createPostContainer}>
@@ -167,8 +176,10 @@ const CreatePost = ({ onPostCreated }) => {
           <Text style={styles.actionText}>Ảnh/video</Text>
         </View>
         <View style={styles.actionButton}>
-          <Icon name="smile-o" type="font-awesome" color="orange" />
-          <Text style={styles.actionText}>Cảm xúc/hoạt động</Text>
+          <TouchableOpacity onPress={toggleNotificationModal}>
+            <Icon name="smile-o" type="font-awesome" color="orange" />
+            <Text style={styles.actionText}>Thư mời</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -253,6 +264,13 @@ const CreatePost = ({ onPostCreated }) => {
           </View>
         </View>
       </Modal>
+
+      <CreateNotification
+        isVisible={isNotificationModalVisible}
+        onClose={toggleNotificationModal}
+        user={user}
+        onNotificationCreated={handleNotificationCreated}
+      />
     </View>
   );
 };

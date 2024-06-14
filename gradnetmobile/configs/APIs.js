@@ -10,6 +10,7 @@ export const endpoints = {
   login: "/o/token/",
   "current-user": "/users/current-user",
   register: "/users/",
+  "invitation" : '/invitations/',
 
   "add-comment": (post_id) => `/posts/${post_id}/add-comment/`,
   "update-comment": (post_id) => `/posts/${post_id}/update-comment/`,
