@@ -223,16 +223,19 @@ const Register = ({ navigation }) => {
               style={{ width: 100, height: 100 }}
             />
           )}
-            <HelperText
-              style={{
-                fontSize: 16,
-              }}
-              type="error"
-              visible={Object.keys(error).length > 0}
-            >
-              {Object.values(error).join('\n')}
-            </HelperText>
-          
+
+
+          <HelperText
+            style={{
+              fontSize: 16,
+            }}
+            type="error"
+            visible={Object.keys(error).length > 0}
+          >
+            {Object.values(error).join("\n")}
+          </HelperText>
+
+
           <FormButton
             title="Đăng ký tài khoản"
             onPress={register}

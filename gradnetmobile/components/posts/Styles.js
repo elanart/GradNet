@@ -42,4 +42,23 @@ export const PostStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  searchBar: {
+    margin: 10,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  searchBarInput: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 10,
+  },
+  searchBarContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
 });

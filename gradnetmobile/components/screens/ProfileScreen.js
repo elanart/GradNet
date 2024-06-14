@@ -1,249 +1,155 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Modal, Button, Alert, FlatList, ActivityIndicator, ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authAPI, endpoints } from '../../configs/APIs';
-import * as ImagePicker from 'expo-image-picker';
-import { Avatar, Card, Icon } from 'react-native-paper';
-import MyStyles from '../../styles/MyStyles';
-import Post from '../posts/Post';
+import React, { useEffect, useState } from "react";
+import {
+  ScrollView,
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Card, Button } from "react-native-paper";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+
+import APIs, { authAPI, endpoints } from "../../configs/APIs";
+
 const ProfileScreen = () => {
   const [user, setUser] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showReactions, setShowReactions] = useState(false);
-  const [selectedPost, setSelectedPost] = useState(null);
-
-  const reactions = [
-    { id: 1, name: 'thumb-up-outline', label: 'Thích' },
-    { id: 2, name: 'heart-outline', label: 'Yêu' },
-    { id: 3, name: 'emoticon-happy-outline', label: 'Haha' },
-    { id: 4, name: 'emoticon-surprised-outline', label: 'Wow' },
-    { id: 5, name: 'emoticon-sad-outline', label: 'Buồn' },
-    { id: 6, name: 'emoticon-angry-outline', label: 'Phẫn nộ' }
-  ];
+  const navigation = useNavigation();
 
   useEffect(() => {
-    fetchUserData();
+    const fetchProfile = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        const userResponse = await authAPI(token).get(
+          endpoints["current-user"]
+        );
+        setUser(userResponse.data);
+
+        const postsResponse = await APIs.get(
+          endpoints["current-user"](userResponse.data.id),
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setPosts(postsResponse.data.results);
+      } catch (error) {
+        console.error(error);
+        Alert.alert("Error", "Failed to load profile information.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      fetchUserPosts(user.id);
-    }
-  }, [user]);
-
-  const handleAction = async (action, post) => {
-    const token = await AsyncStorage.getItem("token");
-    if (!token) {
-      Alert.alert(
-        "Thông báo",
-        "Bạn cần đăng nhập để thực hiện thao tác này.",
-        [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-      );
-      return;
-    }
-    // Thực hiện hành động cảm xúc
-    console.log(`Thực hiện hành động: ${action} trên bài viết: ${post.id}`);
-    setShowReactions(false);
+  const handleEditPost = (post) => {
+    navigation.navigate("EditPost", { post });
   };
 
-  const toggleReactions = (post) => {
-    setSelectedPost(post);
-    setShowReactions(!showReactions);
-  };
- 
-
-  const loadMore = ({ nativeEvent }) => {
-    if (!loading && page > 0 && isCloseToBottom(nativeEvent)) {
-      console.info(Math.random());
-      setPage(page + 1);
-    }
-  };
-
-  const fetchUserData = async () => {
+  const handleDeletePost = async (postId) => {
     try {
       const token = await AsyncStorage.getItem("token");
-      const response = await authAPI(token).get(endpoints["current-user"]);
-      setUser(response.data);
+      await APIs.delete(endpoints["delete_post"](postId), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setPosts(posts.filter((post) => post.id !== postId));
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      console.error(error);
+      Alert.alert("Error", "Failed to delete post.");
     }
   };
 
-  const fetchUserPosts = async (userId) => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      const response = await authAPI(token).get(`${endpoints.posts}?userId=${userId}`);
-      setPosts(response.data.results);
-    } catch (error) {
-      console.error("Error fetching user posts:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleImagePicker = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.cancelled) {
-      setSelectedImage(result.uri);
-      // Save the selected image to user profile or other necessary actions here
-    }
-  };
-
-  const renderImageModal = () => (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={modalVisible}
-      onRequestClose={() => setModalVisible(false)}
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalView}>
-          <Button title="View Image" onPress={() => setSelectedImage(user.avatar)} />
-          <Button title="Change Image" onPress={handleImagePicker} />
-          <Button title="Close" onPress={() => setModalVisible(false)} />
-        </View>
-      </View>
-    </Modal>
-  );
+  if (loading) {
+    return (
+      <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Image
-            source={{ uri: 'https://your-cloudinary-url/cover.jpg' }}
-            style={styles.coverImage}
-          />
-        </TouchableOpacity>
-        {user && (
-          <View style={styles.avatarContainer}>
-            <TouchableOpacity onPress={() => setModalVisible(true)}>
-              <Image
-                source={{ uri: user.avatar }}
-                style={styles.avatar}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
+    <ScrollView contentContainerStyle={styles.container}>
+      {user.cover ? (
+        <Image source={{ uri: user.cover }} style={styles.cover} />
+      ) : (
+        <Image source={{ uri: user.cover }} style={styles.cover} />
+      )}
+
+      <View style={styles.avatarContainer}>
+        <Image
+          source={{
+            uri: "https://99designs-blog.imgix.net/blog/wp-content/uploads/2019/07/attachment_54824442.png?auto=format&q=60&fit=max&w=930",
+          }}
+          style={styles.avatar}
+        />
       </View>
-      <Text style={styles.name}>{user ? `${user.first_name} ${user.last_name}` : "Loading..."}</Text>
-      <ScrollView 
-        contentContainerStyle={MyStyles.scrollViewContent}
-        onScroll={loadMore}
-        scrollEventThrottle={400}
-      >
-        {loading && <ActivityIndicator />}
-        {posts.map((p) => (
-          <Card key={p.id} style={MyStyles.card}>
-            <Card.Title
-              title={`${p.user.first_name} ${p.user.last_name}`}
-              subtitle={new Date(p.created_date).toLocaleString()}
-              left={() => (
-                <Avatar.Image size={40} source={{ uri: p.user.avatar }} />
-              )}
-            />
-            <Card.Content>
-              <Text>{p.caption}</Text>
-              {p.media.length > 0 && (
-                <Image style={MyStyles.media} source={{ uri: p.media[0].file }} />
-              )}
-            </Card.Content>
-            <Card.Actions style={MyStyles.cardActions}>
-              <TouchableOpacity style={MyStyles.actionButton} onPress={() => toggleReactions(p)}>
-                <Icon name="thumb-up-outline" size={20} />
-                <Text style={MyStyles.actionText}>Thích</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={MyStyles.actionButton}>
-                <Icon name="comment-outline" size={20} />
-                <Text style={MyStyles.actionText}>Bình luận</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={MyStyles.actionButton}>
-                <Icon name="share-outline" size={20} />
-                <Text style={MyStyles.actionText}>Chia sẻ</Text>
-              </TouchableOpacity>
-            </Card.Actions>
-            {showReactions && selectedPost && selectedPost.id === p.id && (
-              <View style={MyStyles.reactionContainer}>
-                {reactions.map((reaction) => (
-                  <TouchableOpacity key={reaction.id} onPress={() => handleAction(reaction.label, p)}>
-                    <Icon name={reaction.name} size={30} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </Card>
-        ))}
-        {loading && <ActivityIndicator size="large" />}
-      </ScrollView>
-      {renderImageModal()}
-    </View>
+      <Text style={styles.name}>
+        {user.first_name} {user.last_name}
+      </Text>
+      <Text style={styles.username}>@{user.username}</Text>
+
+      {posts.map((post) => (
+        <Card key={post.id} style={styles.postCard}>
+          <Card.Title title={post.title} subtitle={post.created_at} />
+          <Card.Content>
+            <Text>{post.content}</Text>
+          </Card.Content>
+          <Card.Actions>
+            <Button onPress={() => handleEditPost(post)}>Edit</Button>
+            <Button onPress={() => handleDeletePost(post.id)}>Delete</Button>
+          </Card.Actions>
+        </Card>
+      ))}
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: "center",
+    padding: 10,
+  },
+  loader: {
     flex: 1,
-    backgroundColor: '#fff',
+    justifyContent: "center",
+    alignItems: "center",
   },
-  header: {
-    position: 'relative',
-  },
-  coverImage: {
-    width: '100%',
+  cover: {
+    width: "100%",
     height: 200,
   },
   avatarContainer: {
-    position: 'absolute',
-    bottom: -50,
-    left: 20,
-    borderRadius: 50,
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: '#fff',
+    marginTop: -50,
+    marginBottom: 10,
+    alignItems: "center",
   },
   avatar: {
     width: 100,
     height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: "#fff",
   },
   name: {
-    marginTop: 60,
     fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontWeight: "bold",
   },
-  infoContainer: {
-    padding: 20,
+  username: {
+    fontSize: 18,
+    color: "gray",
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalView: {
-    width: 300,
-    padding: 20,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  postContainer: {
+  postCard: {
+    width: "100%",
     marginVertical: 10,
-    paddingHorizontal: 20,
-  },
-  postImage: {
-    width: '100%',
-    height: 200,
-    marginTop: 10,
   },
 });
 
