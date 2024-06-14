@@ -9,7 +9,7 @@ import {
   TextInput,
   StyleSheet,
 } from "react-native";
-import MyStyles from "../../styles/MyStyles"; // Assuming MyStyles exists
+import MyStyles from "../../styles/MyStyles";
 import APIs, { authAPI, endpoints } from "../../configs/APIs";
 import {
   ActivityIndicator,
@@ -56,7 +56,7 @@ const Post = () => {
   const loadPosts = async () => {
     if (page > 0) {
       setLoading(true);
-      let url = `${endpoints["posts"]}?q=${keyword}&page=${page}`;
+      let url = `${endpoints["posts"]}?content=${keyword}&page=${page}`;
       try {
         let res = await APIs.get(url);
         if (page === 1) setPosts(res.data.results);
@@ -93,6 +93,12 @@ const Post = () => {
     if (!loading && page > 0 && isCloseToBottom(nativeEvent)) {
       setPage(page + 1);
     }
+  };
+
+  // Tìm kiếm
+  const MySearch = (value, callback) => {
+    setPage(1);
+    callback(value);
   };
 
   // Hàm xử lý tạo post
@@ -461,15 +467,10 @@ const Post = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={MyStyles.container}>
-        <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 16 }}>
-          DANH MỤC BÀI VIẾT
-        </Text>
-      </View>
-      <View style={MyStyles.searchBar}>
+      <View style={PostStyles.searchBarContainer}>
         <Searchbar
           placeholder="Nhập từ khóa..."
-          onChangeText={setKeyword}
+          onChangeText={(t) => MySearch(t, setKeyword)}
           value={keyword}
         />
       </View>
@@ -482,7 +483,7 @@ const Post = () => {
       >
         {loading && <ActivityIndicator />}
         {posts.map((p) => {
-          const currentReaction = postReactions[p.id]; // Get the selected reaction for this post
+          const currentReaction = postReactions[p.id];
           return (
             <Card key={p.id} style={MyStyles.card}>
               <Card.Title
@@ -540,8 +541,6 @@ const Post = () => {
                   resizeMode="cover"
                 />
               )}
-
-              {/* Viết IU chỉnh sửa bài viết */}
 
               <Card.Actions style={MyStyles.cardActions}>
                 <View style={MyStyles.actionContainer}>

@@ -229,9 +229,9 @@ const Register = ({ navigation }) => {
               fontSize: 16,
             }}
             type="error"
-            visible={!!error}
+            visible={Object.keys(error).length > 0}
           >
-            {error}
+            {Object.values(error).join("\n")}
           </HelperText>
 
           <FormButton

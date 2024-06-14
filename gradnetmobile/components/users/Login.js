@@ -73,7 +73,7 @@ const Login = ({ navigation }) => {
         });
 
         // Chuyển hướng người dùng sau khi đăng nhập thành công
-        navigation.navigate("Post");
+        navigation.navigate("Main");
       }, 100);
     } catch (ex) {
       // console.error(ex);
