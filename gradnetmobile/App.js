@@ -18,20 +18,20 @@ import {
   LoginCurve,
   Profile,
   Profile2User,
-<<<<<<< HEAD
-  Notification
-=======
+
+  Notification,
+
   Setting,
->>>>>>> b9ffaa9db3dc6c6d625fa95d89b6133f01ad7acd
+
 } from "iconsax-react-native";
 import { checkUser } from "./configs/Utils";
 import Logout from "./components/users/Logout";
 import { PaperProvider } from "react-native-paper";
-<<<<<<< HEAD
+
 import NotificationScreen from "./components/screens/NotificationScreen";
-=======
+
 import ProfileSettings from "./components/screens/ProfileSettings";
->>>>>>> b9ffaa9db3dc6c6d625fa95d89b6133f01ad7acd
+
 
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
