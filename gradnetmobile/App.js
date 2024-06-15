@@ -17,10 +17,12 @@ import {
   LoginCurve,
   Profile,
   Profile2User,
+  Setting,
 } from "iconsax-react-native";
 import { checkUser } from "./configs/Utils";
 import Logout from "./components/users/Logout";
 import { PaperProvider } from "react-native-paper";
+import ProfileSettings from "./components/screens/ProfileSettings";
 
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
@@ -42,6 +44,10 @@ const MyTab = () => {
               variant = focused ? "Bold" : "Outline";
               icon = <Profile2User color={color} size={size} />;
               break;
+            case "Setting":
+              variant = focused ? "Bold" : "Outline";
+              icon = <Setting color={color} size={size} />;
+              break;
             case "Logout":
               icon = <LoginCurve color={color} size={size} />;
               break;
@@ -58,6 +64,7 @@ const MyTab = () => {
     >
       <Tab.Screen name="Post" component={Post} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Setting" component={ProfileSettings} />
       <Tab.Screen name="Logout" component={Logout} />
     </Tab.Navigator>
   );
