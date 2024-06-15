@@ -10,6 +10,7 @@ import Register from "./components/users/Register";
 import OnboardingScreen from "./components/screens/Onboarding";
 import Login from "./components/users/Login";
 import ProfileScreen from "./components/screens/ProfileScreen";
+
 import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
 import {
   Home,
@@ -17,10 +18,12 @@ import {
   LoginCurve,
   Profile,
   Profile2User,
+  Notification
 } from "iconsax-react-native";
 import { checkUser } from "./configs/Utils";
 import Logout from "./components/users/Logout";
 import { PaperProvider } from "react-native-paper";
+import NotificationScreen from "./components/screens/NotificationScreen";
 
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
@@ -42,9 +45,14 @@ const MyTab = () => {
               variant = focused ? "Bold" : "Outline";
               icon = <Profile2User color={color} size={size} />;
               break;
+            case "Notification":
+              variant = focused ? "Bold" : "Outline";
+              icon = <Notification color={color} size={size} />;
+              break;
             case "Logout":
               icon = <LoginCurve color={color} size={size} />;
               break;
+            
             default:
               icon = <Home color={color} size={size} />;
           }
@@ -59,6 +67,7 @@ const MyTab = () => {
       <Tab.Screen name="Post" component={Post} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen name="Logout" component={Logout} />
+      <Tab.Screen name="Notification" component={NotificationScreen} />
     </Tab.Navigator>
   );
 };
