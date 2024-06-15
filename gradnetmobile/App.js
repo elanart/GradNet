@@ -18,20 +18,14 @@ import {
   LoginCurve,
   Profile,
   Profile2User,
-<<<<<<< HEAD
-  Notification
-=======
+  Notification,
   Setting,
->>>>>>> b9ffaa9db3dc6c6d625fa95d89b6133f01ad7acd
 } from "iconsax-react-native";
 import { checkUser } from "./configs/Utils";
 import Logout from "./components/users/Logout";
 import { PaperProvider } from "react-native-paper";
-<<<<<<< HEAD
 import NotificationScreen from "./components/screens/NotificationScreen";
-=======
 import ProfileSettings from "./components/screens/ProfileSettings";
->>>>>>> b9ffaa9db3dc6c6d625fa95d89b6133f01ad7acd
 
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
@@ -66,7 +60,7 @@ const MyTab = () => {
             case "Logout":
               icon = <LoginCurve color={color} size={size} />;
               break;
-            
+
             default:
               icon = <Home color={color} size={size} />;
           }
@@ -81,8 +75,8 @@ const MyTab = () => {
       <Tab.Screen name="Post" component={Post} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen name="Setting" component={ProfileSettings} />
-      <Tab.Screen name="Logout" component={Logout} />
       <Tab.Screen name="Notification" component={NotificationScreen} />
+      <Tab.Screen name="Logout" component={Logout} />
     </Tab.Navigator>
   );
 };

@@ -18,7 +18,8 @@ import CreateNotification from "./CreateNotification";
 
 const CreatePost = ({ onPostCreated }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isNotificationModalVisible, setIsNotificationModalVisible] = useState(false);
+  const [isNotificationModalVisible, setIsNotificationModalVisible] =
+    useState(false);
   const [user, setUser] = useState(null);
   const navigation = useNavigation();
   const [selectedImageURI, setSelectedImageURI] = useState(null);
@@ -68,7 +69,8 @@ const CreatePost = ({ onPostCreated }) => {
   const pickMedia = async (type) => {
     let permissionResult;
     if (type === "image") {
-      permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
     } else if (type === "video") {
       permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     }
@@ -108,6 +110,7 @@ const CreatePost = ({ onPostCreated }) => {
       const token = await AsyncStorage.getItem("token");
       const formData = new FormData();
 
+      formData.append("caption", "Bài viết mới");
       formData.append("content", postContent);
       if (selectedImageURI) {
         const uriParts = selectedImageURI.split(".");
