@@ -18,12 +18,12 @@ import * as ImagePicker from "expo-image-picker";
 import { HelperText, TouchableRipple, Button } from "react-native-paper";
 import useDebounce from "../../hooks/useDebounce";
 import { RegisterStyles } from "../users/Styles";
-import { stringify } from "flatted";
 import MyStyles from "../../styles/MyStyles";
 import mime from "mime";
 
 const Register = ({ navigation }) => {
   const fields = [
+    { label: "Mã số sinh viên", icon: "contacts", field: "alumni_id" },
     { label: "Tên người dùng", icon: "contacts", field: "first_name" },
     { label: "Họ và tên lót", icon: "contacts", field: "last_name" },
     { label: "Tên đăng nhập", icon: "user", field: "username" },

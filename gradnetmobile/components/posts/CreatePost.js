@@ -44,9 +44,7 @@ const CreatePost = ({ onPostCreated }) => {
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) {
-        navigation.navigate("Login", {
-          redirect: "CreatePost",
-        });
+        console.error("Người dùng chưa đăng nhập");
         return;
       }
       const response = await authAPI(token).get(endpoints["current-user"]);

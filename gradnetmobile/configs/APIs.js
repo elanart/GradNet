@@ -8,7 +8,7 @@ export const client_secret =
 export const endpoints = {
   posts: "/posts/",
   login: "/o/token/",
-  "current-user": "/users/current-user",
+  "current-user": "/users/current-user/",
   register: "/users/",
   "invitation" : '/invitations/',
 
