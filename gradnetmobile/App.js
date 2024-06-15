@@ -18,8 +18,11 @@ import {
   LoginCurve,
   Profile,
   Profile2User,
-  Notification,
+<<<<<<< HEAD
+  Notification
+=======
   Setting,
+>>>>>>> b9ffaa9db3dc6c6d625fa95d89b6133f01ad7acd
 } from "iconsax-react-native";
 import { checkUser } from "./configs/Utils";
 import Logout from "./components/users/Logout";

@@ -43,6 +43,7 @@ const Post = () => {
   const [editingCommentText, setEditingCommentText] = useState(""); // Text of the comment being edited
   const [menuVisible, setMenuVisible] = useState(false); // Track menu visibility
   const [selectedCommentId, setSelectedCommentId] = useState(null);
+  const [lockedComments, setLockedComments] = useState({});
 
   const navigation = useNavigation();
 
@@ -464,6 +465,79 @@ const Post = () => {
       await fetchReactionsAndComments([post_id]);
     }
   };
+  // khóa bình luận
+  const toggleCommentsLock = async (postId) => {
+    const token = await AsyncStorage.getItem("token");
+    if (!token) {
+      console.error("Người dùng chưa đăng nhập");
+      return;
+    }
+  
+    try {
+      // Lấy thông tin người dùng từ AsyncStorage
+      // const userString = await AsyncStorage.getItem("current-user");
+      // console.log(userString)
+      // if (!userString) {
+      //   console.error("Không thể lấy thông tin người dùng");
+      //   return;
+      // }
+      // const user = JSON.parse(userString); // Parse chuỗi JSON thành object
+  
+      // Lấy thông tin bài viết để kiểm tra chủ sở hữu
+      // const postResponse = await authAPI(token).get(`${endpoints["posts"]}/${postId}`);
+      // if (postResponse.status !== 200) {
+      //   console.error("Không thể lấy thông tin bài viết");
+      //   return;
+      // }
+  
+      // const post = postResponse.data;
+      // if (post.owner_id !== user.id) {
+      //   console.error("Người dùng không phải là chủ sở hữu của bài viết");
+      //   Alert.alert("Thông báo", "Bạn không có quyền thực hiện hành động này.");
+      //   return;
+      // }
+  
+      // Thực hiện yêu cầu thay đổi trạng thái khóa bình luận
+      const response = await authAPI(token).post(`${endpoints["posts"]}/${postId}/block-comments/`);
+  
+      if (response.status === 200) {
+        // Giả sử backend trả về trạng thái cập nhật của khóa bình luận
+        const updatedPost = response.data; // Nếu backend gửi lại dữ liệu bài viết đã cập nhật
+  
+        console.log("Updated post data:", updatedPost); // Log dữ liệu trả về từ backend
+  
+        const isLocked = updatedPost.status === "Đã khóa bình luận";
+  
+        setPosts((current) =>
+          current.map((post) =>
+            post.id === postId ? { ...post, allow_comments: !isLocked } : post
+          )
+        );
+  
+        // Cập nhật trạng thái khóa bình luận
+        setLockedComments((current) => ({
+          ...current,
+          [postId]: isLocked,
+        }));
+  
+        // Hiển thị thông báo cho người dùng biết trạng thái mới của khóa bình luận
+        Alert.alert(
+          "Thông báo",
+          isLocked
+            ? "Bình luận đã bị khóa."
+            : "Bình luận đã được mở khóa."
+        );
+      }
+    } catch (error) {
+      console.error("Error toggling comments lock:", error);
+      Alert.alert("Error", "Lỗi khi thực hiện khóa/mở bình luận.");
+    }
+  };
+  
+  
+  
+  
+  
 
   return (
     <View style={{ flex: 1 }}>
@@ -502,6 +576,14 @@ const Post = () => {
                       </TouchableOpacity>
                     }
                   >
+                    <Menu.Item
+                        onPress={() => {
+                          toggleCommentsLock(p.id);
+                          setSelectedPostId(null);
+                        }}
+                        title="Khóa/mở bình luận"
+                      
+                      />
                     <Menu.Item
                       onPress={() => {
                         handleEditPost(p.id);
@@ -664,6 +746,7 @@ const Post = () => {
                         </TouchableOpacity>
                       }
                     >
+                      
                       <Menu.Item
                         onPress={() => handleEditComment(comment.id, p.id)}
                         title="Chỉnh sửa"

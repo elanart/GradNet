@@ -92,7 +92,7 @@ const Register = ({ navigation }) => {
 
   const checkUserName = async (username) => {
     try {
-      let res = await APIs.get(endpoints["check-username"], {
+let res = await APIs.get(endpoints["check-username"], {
         params: { username },
       });
       // Nếu username đã tồn tại = 200
@@ -199,7 +199,7 @@ const Register = ({ navigation }) => {
                 value={user[f.field]}
                 onChangeText={(t) => change(t, f.field)}
                 text={f.label}
-                secureTextEntry={f.secureTextEntry && secureTextEntry[f.field]}
+secureTextEntry={f.secureTextEntry && secureTextEntry[f.field]}
                 icon={f.icon}
                 autoCapitalize="none"
                 keyboardType="email-address"
