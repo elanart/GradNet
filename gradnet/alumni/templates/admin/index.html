@@ -1,0 +1,14 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>{{ site_header }}</h1>
+<div class="app-dashboard">
+    <div class="module">
+        <h2>Thống kê</h2>
+        <ul>
+            <li><a href="{% url 'admin:user-stats' %}">Thống kê người dùng</a></li>
+            <li><a href="{% url 'admin:post-stats' %}">Thống kê bài viết</a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

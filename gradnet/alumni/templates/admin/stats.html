@@ -1,0 +1,80 @@
+{% extends 'admin/base_site.html' %}
+
+{% block content %}
+<h1>THỐNG KÊ SỐ LƯỢNG NGƯỜI DÙNG</h1>
+
+<ul>
+    <li><strong>Tổng số lượng User</strong>: {{ total_users }} người.</li>
+</ul>
+
+<form method="get" action="">
+    <label for="view">Xem thống kê theo:</label>
+    <select id="view" name="view" onchange="this.form.submit()">
+        <option value="year" {% if view_option == 'year' %}selected{% endif %}>Năm</option>
+        <option value="month" {% if view_option == 'month' %}selected{% endif %}>Tháng</option>
+        <option value="quarter" {% if view_option == 'quarter' %}selected{% endif %}>Quý</option>
+    </select>
+
+    {% if view_option == 'month' or view_option == 'quarter' %}
+        <label for="year">Năm:</label>
+        <select id="year" name="year" onchange="this.form.submit()">
+            <option value="" disabled selected>Chọn năm</option>
+            {% for year in years %}
+                <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+        </select>
+    {% endif %}
+</form>
+
+<div style="width: 50%">
+    <canvas id="myChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let labels = [];
+    let data = [];
+
+    {% if view_option == 'month' %}
+        {% for item in stats %}
+            labels.push('Tháng {{ item.month }}');
+            data.push({{ item.count }});
+        {% endfor %}
+    {% elif view_option == 'quarter' %}
+        {% for item in stats %}
+            labels.push('Quý {{ item.quarter }}');
+            data.push({{ item.count }});
+        {% endfor %}
+    {% else %}
+        {% for item in stats %}
+            labels.push('{{ item.year }}');
+            data.push({{ item.count }});
+        {% endfor %}
+    {% endif %}
+
+    window.onload = function() {
+        const ctx = document.getElementById('myChart');
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Số lượng',
+                    data: data,
+                    borderWidth: 1,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
