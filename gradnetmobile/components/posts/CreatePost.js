@@ -178,7 +178,7 @@ const CreatePost = ({ onPostCreated }) => {
         </View>
         <View style={styles.actionButton}>
           <TouchableOpacity onPress={toggleNotificationModal}>
-            <Icon name="smile-o" type="font-awesome" color="orange" />
+            <Icon name="envelope" type="font-awesome" color="orange" />
             <Text style={styles.actionText}>Thư mời</Text>
           </TouchableOpacity>
         </View>
