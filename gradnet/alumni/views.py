@@ -7,7 +7,8 @@ from alumni import serializers, perms, paginators
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.parsers import MultiPartParser, JSONParser
-
+from .models import Survey, Question, Choice, Answer
+from .serializers import SurveySerializer, AnswerSerializer
 # Create your views here.
 
 
@@ -30,22 +31,22 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
             user.save()
         return Response(serializers.UserSerializer(request.user).data)
 
-    @action(methods=['post'], url_path='change-password', detail=False)
-    def change_password(self, request):
-        user = request.user
-        current_password = request.data.get('current_password')
-        new_password = request.data.get('new_password')
-        confirm_password = request.data.get('confirm_password')
+    # @action(methods=['post'], url_path='change-password', detail=False)
+    # def change_password(self, request):
+    #     user = request.user
+    #     current_password = request.data.get('current_password')
+    #     new_password = request.data.get('new_password')
+    #     confirm_password = request.data.get('confirm_password')
 
-        if user.check_password(current_password):
-            if new_password.__eq__(confirm_password):
-                user.set_password(new_password)
-                user.save()
-                return Response({"success": "Mật khẩu đã được thay đổi thành công!"})
-            else:
-                return Response({"error": "Xác nhận mật khẩu không khớp!"})
+    #     if user.check_password(current_password):
+    #         if new_password.__eq__(confirm_password):
+    #             user.set_password(new_password)
+    #             user.save()
+    #             return Response({"success": "Mật khẩu đã được thay đổi thành công!"})
+    #         else:
+    #             return Response({"error": "Xác nhận mật khẩu không khớp!"})
 
-        return Response({"error": "Mật khẩu hiện tại không chính xác!"}, status=status.HTTP_400_BAD_REQUEST)
+    #     return Response({"error": "Mật khẩu hiện tại không chính xác!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PostViewSet(viewsets.ViewSet,
@@ -60,7 +61,7 @@ class PostViewSet(viewsets.ViewSet,
     def get_permissions(self):
         if self.action in ['list']:
             return [permissions.AllowAny()]
-        elif self.action in ['partial_update', 'block-comments', 'delete_comment']:
+        elif self.action in ['partial_update', 'block-comments', 'delete_comment', 'update_comment']:
             return [perms.PostOwner()]
         elif self.action in ['delete_comment']:
             return [perms.PostOwner() or perms.CommentOwner()]
@@ -211,23 +212,6 @@ class PostViewSet(viewsets.ViewSet,
             action.save()
         return Response(serializers.ActionSerializer(action).data,
                         status=status.HTTP_201_CREATED)
-#   @action(methods=['post'], url_path='add-action', detail=True)
-#     def add_action(self, request, pk):
-#         post = self.get_object()
-#         action_type = request.data.get('type')
-#         action, created = Action.objects.get_or_create(user=request.user, post=post, defaults={'type': action_type})
-
-#         if not created:
-#             if action.is_active:
-#                 action.is_active = False
-#             else:
-#                 action.is_active = True
-#             action.save()
-#         else:
-#             action.is_active = True
-#             action.save()
-
-#         return Response(serializers.ActionSerializer(action).data, status=status.HTTP_201_CREATED)
 
 
 class InvitationViewSet(viewsets.ViewSet,
@@ -301,3 +285,106 @@ class InvitationViewSet(viewsets.ViewSet,
 
         response_data = serializers.InvitationSerializer(invitation, context={'request': request}).data
         return Response(response_data)
+
+
+################
+class SurveyViewSet(viewsets.ViewSet,generics.ListAPIView,
+                        generics.DestroyAPIView):
+    queryset = Survey.objects.all()
+    serializer_class = serializers.SurveySerializer
+    parser_classes = [MultiPartParser, JSONParser]
+    permission_classes = [permissions.IsAdminUser]
+
+    def create(self, request):
+        data = request.data
+        user = request.user
+
+        title = data.get('title')
+        content = data.get('content')
+
+        # Tạo survey
+        survey = Survey.objects.create(user=user, title=title, content=content)
+
+        response_data = serializers.SurveySerializer(survey, context={'request': request}).data
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+    @action(methods=['get'], url_path='get-questions', detail=True)
+    def get_questions(self, request, pk):
+        question = self.get_object().questions.all()
+
+        return Response(serializers.QuestionSerializer(question, many=True).data)
+
+    @action(methods=['post'], url_path='add-question', detail=True)
+    def add_question(self, request, pk):
+        survey = self.get_object()
+        name = request.data.get('name')
+        if name:
+            question = Question.objects.create(name=name, survey=survey)
+            return Response(serializers.QuestionSerializer(question).data,
+                        status=status.HTTP_201_CREATED)
+
+    # @action(detail=True, methods=['post'])
+    # def add_choice(self, request, pk=None):
+    #     question_id = request.data.get('question_id')
+    #     name = request.data.get('name')
+    #     if question_id and name:
+    #         try:
+    #             question = Question.objects.get(id=question_id)
+    #             Choice.objects.create(name=name, question=question)
+    #             return Response({'status': 'choice added'}, status=status.HTTP_201_CREATED)
+    #         except Question.DoesNotExist:
+    #             return Response({'status': 'question not found'}, status=status.HTTP_404_NOT_FOUND)
+    #     return Response({'status': 'question_id and name are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class QuestionViewSet(viewsets.ViewSet, generics.DestroyAPIView):
+    queryset = Question.objects.all()
+    serializer_class = serializers.QuestionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(methods=['get'], url_path='get-choices', detail=True)
+    def get_choices(self, request, pk):
+        choices = self.get_object().choice_set.all()
+
+        return Response(serializers.ChoiceSerializer(choices, many=True).data)
+
+    @action(methods=['post'], url_path='create-choices', detail=True)
+    def create_choices(self, request, pk):
+        question = self.get_object()
+        name = request.data.get('name')
+
+        choices = Choice.objects.create(name=name, question=question)
+
+        return Response(serializers.ChoiceSerializer(choices).data,
+                        status=status.HTTP_201_CREATED)
+
+
+
+
+#####################
+class AnswerViewSet(viewsets.ViewSet,generics.ListAPIView, generics.DestroyAPIView):
+    queryset = Answer.objects.all()
+    serializer_class = AnswerSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+    # def create(self, request, *args, **kwargs):
+    #     survey_id = request.data.get('survey')
+    #     question_id = request.data.get('question')
+    #     choice_id = request.data.get('choice')
+
+    #     try:
+    #         survey = Survey.objects.get(id=survey_id)
+    #         question = Question.objects.get(id=question_id)
+    #         choice = Choice.objects.get(id=choice_id)
+
+    #         answer = Answer.objects.create(
+    #             user=request.user,
+    #             survey=survey,
+    #             question=question,
+    #             choice=choice
+    #         )
+    #         serializer = self.get_serializer(answer)
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     except (Survey.DoesNotExist, Question.DoesNotExist, Choice.DoesNotExist):
+    #         return Response({'status': 'survey, question, or choice not found'}, status=status.HTTP_404_NOT_FOUND)
