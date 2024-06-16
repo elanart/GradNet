@@ -1,92 +1,139 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+// components/surveys/CreateSurvey.js
 
-const CreateSurvey = () => {
+import React, { useState } from 'react';
+import { View, TextInput, Button, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authAPI } from '../../configs/APIs';
+
+const BASE_URL = "https://elanart.pythonanywhere.com";
+
+const CreateSurvey = ({ navigation }) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [questions, setQuestions] = useState([]);
+    const [questions, setQuestions] = useState([{ id: Date.now(), question: '' }]);
+    const [message, setMessage] = useState('');
 
-    const handleAddQuestion = () => {
-        setQuestions([...questions, { name: '', choices: [] }]);
-    };
+    const handleCreateSurvey = async () => {
+        const token = await AsyncStorage.getItem("token");
+        if (!token) {
+          console.error("Người dùng chưa đăng nhập");
+          return;
+        }
 
-    const handleQuestionChange = (index, event) => {
-        const newQuestions = [...questions];
-        newQuestions[index].name = event.target.value;
-        setQuestions(newQuestions);
-    };
-
-    const handleAddChoice = (questionIndex) => {
-        const newQuestions = [...questions];
-        newQuestions[questionIndex].choices.push('');
-        setQuestions(newQuestions);
-    };
-
-    const handleChoiceChange = (questionIndex, choiceIndex, event) => {
-        const newQuestions = [...questions];
-        newQuestions[questionIndex].choices[choiceIndex] = event.target.value;
-        setQuestions(newQuestions);
-    };
-
-    const handleSubmit = async (event) => {
-        event.preventDefault();
         try {
-            const surveyResponse = await axios.post('/api/surveys/', { title, content });
-            const surveyId = surveyResponse.data.id;
+            const response = await authAPI(token).post(`${BASE_URL}/surveys/`, 
+                { title, content }, 
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            const surveyId = response.data.id;
 
+            // Thêm câu hỏi vào khảo sát
             for (const question of questions) {
-                const questionResponse = await axios.post(`/api/surveys/${surveyId}/add_question/`, { name: question.name });
-                const questionId = questionResponse.data.id;
-
-                for (const choice of question.choices) {
-                    await axios.post(`/api/surveys/${surveyId}/add_choice/`, { question_id: questionId, name: choice });
+                if (question.question) {
+                    await authAPI(token).post(`${BASE_URL}/surveys/${surveyId}/add-question/`, 
+                        { name: question.question }, 
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        }
+                    );
                 }
             }
-            window.location.href = '/surveys';
+
+            setMessage('Survey created successfully!');
+            navigation.goBack(); // Quay lại danh sách khảo sát sau khi tạo
         } catch (error) {
             console.error(error);
+            setMessage('Failed to create survey.');
         }
     };
 
+    const addQuestion = () => {
+        setQuestions([...questions, { id: Date.now(), question: '' }]);
+    };
+
+    const updateQuestion = (id, text) => {
+        setQuestions(
+            questions.map(q => q.id === id ? { ...q, question: text } : q)
+        );
+    };
+
     return (
-        <div>
-            <h1>Tạo khảo sát mới</h1>
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label>Tiêu đề</label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
-                </div>
-                <div>
-                    <label>Nội dung</label>
-                    <textarea value={content} onChange={(e) => setContent(e.target.value)} />
-                </div>
-                <div>
-                    <button type="button" onClick={handleAddQuestion}>Thêm câu hỏi</button>
-                </div>
-                {questions.map((question, qIndex) => (
-                    <div key={qIndex}>
-                        <input
-                            type="text"
-                            placeholder="Câu hỏi"
-                            value={question.name}
-                            onChange={(e) => handleQuestionChange(qIndex, e)}
-                        />
-                        <button type="button" onClick={() => handleAddChoice(qIndex)}>Thêm lựa chọn</button>
-                        {question.choices.map((choice, cIndex) => (
-                            <input
-                                key={cIndex}
-                                type="text"
-                                placeholder="Lựa chọn"
-                                value={choice}
-                                onChange={(e) => handleChoiceChange(qIndex, cIndex, e)}
-                            />
-                        ))}
-                    </div>
-                ))}
-                <button type="submit">Lưu khảo sát</button>
-            </form>
-        </div>
+        <View style={styles.container}>
+            <Text style={styles.label}>Title</Text>
+            <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+            />
+            <Text style={styles.label}>Content</Text>
+            <TextInput
+                style={styles.input}
+                value={content}
+                onChangeText={setContent}
+            />
+
+            <Text style={styles.label}>Questions</Text>
+            <FlatList
+                data={questions}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                    <TextInput
+                        style={styles.input}
+                        value={item.question}
+                        onChangeText={(text) => updateQuestion(item.id, text)}
+                        placeholder="Question text"
+                    />
+                )}
+                ListFooterComponent={() => (
+                    <TouchableOpacity onPress={addQuestion} style={styles.addButton}>
+                        <Text style={styles.addButtonText}>+ Add Question</Text>
+                    </TouchableOpacity>
+                )}
+            />
+
+            <Button
+                title="Create Survey"
+                onPress={handleCreateSurvey}
+            />
+            {message ? <Text>{message}</Text> : null}
+        </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        padding: 16,
+    },
+    label: {
+        fontSize: 16,
+        marginBottom: 8,
+    },
+    input: {
+        height: 40,
+        borderColor: 'gray',
+        borderWidth: 1,
+        marginBottom: 16,
+        paddingLeft: 8,
+    },
+    addButton: {
+        marginTop: 16,
+        padding: 10,
+        backgroundColor: '#007bff',
+        borderRadius: 5,
+        alignItems: 'center',
+    },
+    addButtonText: {
+        color: 'white',
+        fontSize: 16,
+    },
+});
 
 export default CreateSurvey;

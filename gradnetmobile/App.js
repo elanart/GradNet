@@ -30,17 +30,27 @@ import Logout from "./components/users/Logout";
 import { PaperProvider } from "react-native-paper";
 import NotificationScreen from "./components/screens/NotificationScreen";
 import ProfileSettings from "./components/screens/ProfileSettings";
-
 import SurveyList from "./components/surveys/SurveyList";
 import CreateSurvey from "./components/surveys/CreateSurvey";
 import SurveyDetails from "./components/surveys/SurveyDetails";
-import SurveyResults from "./components/surveys/SurveyResults";
+
+
+
 
 
 
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
-
+// Stack Navigator for Surveys
+const SurveyStack = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="SurveyList" component={SurveyList} />
+      <Stack.Screen name="CreateSurvey" component={CreateSurvey} />
+      <Stack.Screen name="SurveyDetails" component={SurveyDetails} />
+    </Stack.Navigator>
+  );
+};
 const MyTab = () => {
   return (
     <Tab.Navigator
@@ -88,10 +98,7 @@ const MyTab = () => {
       <Tab.Screen name="Post" component={Post} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen name="Setting" component={ProfileSettings} />
-
-      <Tab.Screen name="Survey" component={SurveyList} />
-
-
+      <Tab.Screen name="Survey" component={SurveyStack} />
       <Tab.Screen name="Notification" component={NotificationScreen} />
       <Tab.Screen name="Logout" component={Logout} />
     </Tab.Navigator>
@@ -111,8 +118,7 @@ const MyStack = () => {
       />
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
       <Stack.Screen name="CreateSurvey" component={CreateSurvey} />
-      <Stack.Screen name="SurveyDetails" component={SurveyDetails} />
-      <Stack.Screen name="SurveyResults" component={SurveyResults} />
+      
     </Stack.Navigator>
   );
 };
