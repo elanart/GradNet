@@ -10,11 +10,18 @@ export const endpoints = {
   login: "/o/token/",
   "current-user": "/users/current-user/",
   register: "/users/",
+  "change-password": `/users/change-password/`,
   "invitation" : '/invitations/',
+  surveys: "/surveys/",
 
+  "get-questions": (surveyId) => `/surveys/${surveyId}/get-questions/`,
+  "add-question": (surveyId) => `/surveys/${surveyId}/add-question/`,
+  "get-choices": (questionId) => `/questions/${questionId}/get-choices/`,
+  "create-choices": (questionId) => `/questions/${questionId}/create-choices/`,
   "add-comment": (post_id) => `/posts/${post_id}/add-comment/`,
   "update-comment": (post_id) => `/posts/${post_id}/update-comment/`,
   "delete-comment": (post_id) => `/posts/${post_id}/delete-comment/`,
+  surveys: "/surveys/",
 };
 
 export const authAPI = (token) => {

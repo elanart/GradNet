@@ -4,21 +4,23 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { onAuthStateChanged } from "firebase/auth";
 import app from "./configs/firebase";
+import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { PaperProvider } from "react-native-paper";
+
 import { MyDispatcherContext, MyUserContext } from "./configs/Context";
 import { MyUserReducer } from "./configs/Reducers";
+import { checkUser } from "./configs/Utils";
+
 import Post from "./components/posts/Post";
 import Register from "./components/users/Register";
 import OnboardingScreen from "./components/screens/Onboarding";
 import Login from "./components/users/Login";
 import ProfileScreen from "./components/screens/ProfileScreen";
-
-import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
 import {
   Home,
   Home2,
   LoginCurve,
-  Profile,
   Profile2User,
   Notification,
   Triangle,
@@ -26,7 +28,6 @@ import {
 } from "iconsax-react-native";
 import { checkUser } from "./configs/Utils";
 import Logout from "./components/users/Logout";
-import { PaperProvider } from "react-native-paper";
 import NotificationScreen from "./components/screens/NotificationScreen";
 import ProfileSettings from "./components/screens/ProfileSettings";
 import SurveyList from "./components/surveys/SurveyList";
@@ -36,6 +37,7 @@ import Chat from "./components/screens/Chat";
 
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
+
 // Stack Navigator for Surveys
 const SurveyStack = () => {
   return (
@@ -46,16 +48,16 @@ const SurveyStack = () => {
     </Stack.Navigator>
   );
 };
+
 const MyTab = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let icon, variant;
+          let icon;
 
           switch (route.name) {
             case "Post":
-              variant = focused ? "Bold" : "Outline";
               icon = <Home2 color={color} size={size} />;
               break;
             case "Chat":
@@ -75,12 +77,13 @@ const MyTab = () => {
               icon = <Setting color={color} size={size} />;
               break;
             case "Survey":
+              variant = focused ? "Bold" : "Outline";
               icon = <Triangle color={color} size={size} />;
               break;
             case "Logout":
+              variant = focused ? "Bold" : "Outline";
               icon = <LoginCurve color={color} size={size} />;
               break;
-
             default:
               icon = <Home color={color} size={size} />;
           }

@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   TextInput,
+  Modal,
 } from "react-native";
 import FormInput from "../base/form/FormInput";
 import FormButton from "../base/form/FormButton";
@@ -29,9 +30,12 @@ const ProfileSettings = ({ navigation }) => {
     { label: "Email", icon: "contacts", field: "email" },
   ];
 
-  // State để lưu trữ thông tin người dùng, lỗi, kiểm tra trạng thái loading
   const [user, setUser] = useState({});
   const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const change = (value, field) => {
     setUser((current) => ({ ...current, [field]: value }));
@@ -40,7 +44,6 @@ const ProfileSettings = ({ navigation }) => {
   const AvatarPicker = async () => {
     let { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      // "granted" (đã cấp phép)
       Alert.alert("Gradnet", "Permissions denied!");
     } else {
       const res = await ImagePicker.launchImageLibraryAsync();
@@ -51,7 +54,6 @@ const ProfileSettings = ({ navigation }) => {
   const CoverPicker = async () => {
     let { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      // "granted" (đã cấp phép)
       Alert.alert("Gradnet", "Permissions denied!");
     } else {
       const res = await ImagePicker.launchImageLibraryAsync();
@@ -60,7 +62,6 @@ const ProfileSettings = ({ navigation }) => {
   };
 
   const update = async () => {
-    //Làm tiếp phần chỉnh sửa hồ sơ
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem("token");
@@ -77,16 +78,14 @@ const ProfileSettings = ({ navigation }) => {
             name: user.avatar.fileName || "avatar.jpg",
             type: mime.getType(user.avatar.uri) || "image/jpeg",
           });
+        } else if (key === "cover") {
+          form.append(key, {
+            uri: user.cover.uri,
+            name: user.cover.fileName || "cover.jpg",
+            type: mime.getType(user.avatar.uri) || "image/jpeg",
+          });
         } else {
-          if (key === "cover") {
-            form.append(key, {
-              uri: user.cover.uri,
-              name: user.cover.fileName || "cover.jpg",
-              type: mime.getType(user.avatar.uri) || "image/jpeg",
-            });
-          } else {
-            form.append(key, user[key]);
-          }
+          form.append(key, user[key]);
         }
       }
 
@@ -106,42 +105,53 @@ const ProfileSettings = ({ navigation }) => {
     }
   };
 
+  const handleChangePassword = async () => {
+    const token = await AsyncStorage.getItem("token");
+    if (!token) {
+      console.error("Người dùng chưa đăng nhập");
+      return;
+    }
+
+    try {
+      const response = await authAPI(token).post(endpoints["change-password"], {
+        current_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      });
+
+      if (response.data.success) {
+        Alert.alert("Thành công", response.data.success);
+        setModalVisible(false);
+      } else {
+        Alert.alert("Lỗi", response.data.error || "Có lỗi xảy ra, vui lòng thử lại.");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Lỗi", "Có lỗi xảy ra, vui lòng thử lại.");
+    }
+  };
+
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        margin: 20,
-      }}
-    >
+    <View style={{ flex: 1, justifyContent: "center", margin: 20 }}>
       <ScrollView>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          {/* <View style={{ alignItems: "center" }}>
-            <Image
-              source={require("../../assets/logoOU.png")}
-              style={MyStyles.logo}
-            />
-          </View> */}
-
           <View style={{ alignItems: "center" }}>
             <Text style={MyStyles.text}>CẬP NHẬT HỒ SƠ</Text>
           </View>
 
           {fields.map((f) => (
-            <>
-              <FormInput
-                key={f.field}
-                value={user[f.field]}
-                onChangeText={(t) => change(t, f.field)}
-                text={f.label}
-                icon={f.icon}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoCorrect={false}
-              />
-            </>
+            <FormInput
+              key={f.field}
+              value={user[f.field]}
+              onChangeText={(t) => change(t, f.field)}
+              text={f.label}
+              icon={f.icon}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoCorrect={false}
+            />
           ))}
 
           <TouchableRipple
@@ -169,6 +179,15 @@ const ProfileSettings = ({ navigation }) => {
             </Button>
           </TouchableRipple>
 
+          <TouchableRipple
+            onPress={() => setModalVisible(true)}
+            style={(MyStyles.forgotpasswordButton, { alignItems: "center" })}
+          >
+            <Button labelStyle={RegisterStyles.pickerButtonText}>
+              Đổi mật khẩu...
+            </Button>
+          </TouchableRipple>
+
           {user.cover && (
             <Image
               source={{ uri: user.cover.uri }}
@@ -183,8 +202,105 @@ const ProfileSettings = ({ navigation }) => {
           />
         </KeyboardAvoidingView>
       </ScrollView>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <TextInput
+              style={styles.input}
+              placeholder="Mật khẩu hiện tại"
+              secureTextEntry
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Mật khẩu mới"
+              secureTextEntry
+              value={newPassword}
+              onChangeText={setNewPassword}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Xác nhận mật khẩu mới"
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+            <TouchableOpacity
+              style={[styles.button, styles.buttonChangePassword]}
+              onPress={handleChangePassword}
+            >
+              <Text style={styles.buttonText}>Đổi mật khẩu</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => setModalVisible(!modalVisible)}
+            >
+              <Text style={styles.buttonText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  input: {
+    height: 40,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    marginBottom: 12,
+    borderRadius: 4,
+    width: 250,
+  },
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+    marginTop: 10,
+  },
+  buttonChangePassword: {
+    backgroundColor: "orange",
+  },
+  buttonClose: {
+    backgroundColor: "#2196F3",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+});
 
 export default ProfileSettings;
