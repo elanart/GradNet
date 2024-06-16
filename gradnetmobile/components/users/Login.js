@@ -16,6 +16,8 @@ import { MyDispatcherContext } from "../../configs/Context";
 import { FormStyle } from "../base/form/FormStyle";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 import { HelperText } from "react-native-paper";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../configs/firebase";
 
 const Login = ({ navigation }) => {
   const [user, setUser] = useState({});
@@ -57,6 +59,9 @@ const Login = ({ navigation }) => {
 
       // console.info(res.data);
       await AsyncStorage.setItem("token", res.data.access_token);
+
+      // Đăng nhập vào Firebase
+      await signInWithEmailAndPassword(auth, user.username, user.password);
 
       //setTimeout để chờ lưu token vào AsyncStorage
       setTimeout(async () => {

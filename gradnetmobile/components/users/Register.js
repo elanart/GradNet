@@ -19,6 +19,8 @@ import { HelperText, TouchableRipple, Button } from "react-native-paper";
 import useDebounce from "../../hooks/useDebounce";
 import { RegisterStyles } from "../users/Styles";
 import MyStyles from "../../styles/MyStyles";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../configs/firebase";
 import mime from "mime";
 
 const Register = ({ navigation }) => {
@@ -92,7 +94,7 @@ const Register = ({ navigation }) => {
 
   const checkUserName = async (username) => {
     try {
-let res = await APIs.get(endpoints["check-username"], {
+      let res = await APIs.get(endpoints["check-username"], {
         params: { username },
       });
       // Nếu username đã tồn tại = 200
@@ -152,6 +154,8 @@ let res = await APIs.get(endpoints["check-username"], {
         }
       }
 
+      // await createUserWithEmailAndPassword(auth, user.username, user.password);
+
       let res = await APIs.post(endpoints["register"], form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -199,7 +203,7 @@ let res = await APIs.get(endpoints["check-username"], {
                 value={user[f.field]}
                 onChangeText={(t) => change(t, f.field)}
                 text={f.label}
-secureTextEntry={f.secureTextEntry && secureTextEntry[f.field]}
+                secureTextEntry={f.secureTextEntry && secureTextEntry[f.field]}
                 icon={f.icon}
                 autoCapitalize="none"
                 keyboardType="email-address"
@@ -224,7 +228,6 @@ secureTextEntry={f.secureTextEntry && secureTextEntry[f.field]}
             />
           )}
 
-
           <HelperText
             style={{
               fontSize: 16,
@@ -234,7 +237,6 @@ secureTextEntry={f.secureTextEntry && secureTextEntry[f.field]}
           >
             {Object.values(error).join("\n")}
           </HelperText>
-
 
           <FormButton
             title="Đăng ký tài khoản"

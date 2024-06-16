@@ -13,9 +13,15 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authAPI, endpoints } from "../../configs/APIs";
-import { Ionicons } from '@expo/vector-icons';
-import { Menu, MenuOptions, MenuOption, MenuTrigger, MenuProvider } from 'react-native-popup-menu';
-import Modal from 'react-native-modal';
+import { Ionicons } from "@expo/vector-icons";
+import {
+  Menu,
+  MenuOptions,
+  MenuOption,
+  MenuTrigger,
+  MenuProvider,
+} from "react-native-popup-menu";
+import Modal from "react-native-modal";
 
 const NotificationScreen = () => {
   const [invitations, setInvitations] = useState([]);
@@ -46,8 +52,9 @@ const NotificationScreen = () => {
       const response = await authAPI(token).get(endpoints["invitation"]);
       setInvitations(response.data);
     } catch (error) {
-      console.error("Error fetching invitations:", error);
-      Alert.alert("Error", "An error occurred while fetching invitations.");
+      // console.error("Error fetching invitations:", error);
+      Alert.alert("Lỗi!", "Bạn không có quyền để sử dụng chức năng này!");
+      navigation.navigate("Post");
     } finally {
       setLoading(false);
     }
@@ -88,7 +95,10 @@ const NotificationScreen = () => {
     const updatedData = { title, content, location };
     const token = await AsyncStorage.getItem("token");
     try {
-      await authAPI(token).patch(`${endpoints["invitation"]}/${currentInvitation.id}/`, updatedData);
+      await authAPI(token).patch(
+        `${endpoints["invitation"]}/${currentInvitation.id}/`,
+        updatedData
+      );
       setIsModalVisible(false);
       onRefresh(); // Refresh the invitations list after editing
     } catch (error) {
@@ -101,14 +111,22 @@ const NotificationScreen = () => {
     const token = await AsyncStorage.getItem("token");
     console.log("Token: ", token);
     console.log("URL: ", `${endpoints["invitation"]}/${invitationId}/`);
-    
+
     try {
-      const response = await authAPI(token).delete(`${endpoints["invitation"]}/${invitationId}/`);
+      const response = await authAPI(token).delete(
+        `${endpoints["invitation"]}/${invitationId}/`
+      );
       console.log("Response: ", response);
       if (response.status === 204) {
         // Xóa thành công
-        setFilteredInvitations(filteredInvitations.filter(invitation => invitation.id !== invitationId));
-        setInvitations(invitations.filter(invitation => invitation.id !== invitationId));
+        setFilteredInvitations(
+          filteredInvitations.filter(
+            (invitation) => invitation.id !== invitationId
+          )
+        );
+        setInvitations(
+          invitations.filter((invitation) => invitation.id !== invitationId)
+        );
       } else {
         Alert.alert("Error", "Failed to delete the invitation.");
       }
@@ -117,7 +135,6 @@ const NotificationScreen = () => {
       Alert.alert("Error", "An error occurred while deleting the invitation.");
     }
   };
-  
 
   const renderItem = ({ item }) => (
     <View style={styles.invitationContainer}>

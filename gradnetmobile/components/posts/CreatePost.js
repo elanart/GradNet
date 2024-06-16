@@ -52,13 +52,13 @@ const CreatePost = ({ onPostCreated }) => {
       setUser(response.data);
     } catch (error) {
       console.error("Error fetching user data:", error);
-      if (error.response && error.response.status === 401) {
-        navigation.navigate("Login", {
-          redirect: "CreatePost",
-        });
-      } else {
-        Alert.alert("Lỗi", "Đã xảy ra lỗi khi lấy thông tin người dùng.");
-      }
+      // if (error.response && error.response.status === 401) {
+      //   navigation.navigate("Login", {
+      //     redirect: "CreatePost",
+      //   });
+      // } else {
+      //   Alert.alert("Lỗi", "Đã xảy ra lỗi khi lấy thông tin người dùng.");
+      // }
     }
   };
 

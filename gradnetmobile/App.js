@@ -1,7 +1,9 @@
-import React, { useContext, useEffect, useReducer } from "react";
+import React, { useContext, useEffect, useReducer, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
+import { onAuthStateChanged } from "firebase/auth";
+import app from "./configs/firebase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MyDispatcherContext, MyUserContext } from "./configs/Context";
 import { MyUserReducer } from "./configs/Reducers";
@@ -19,10 +21,7 @@ import {
   Profile,
   Profile2User,
   Notification,
-
   Triangle,
-
-
   Setting,
 } from "iconsax-react-native";
 import { checkUser } from "./configs/Utils";
@@ -33,11 +32,7 @@ import ProfileSettings from "./components/screens/ProfileSettings";
 import SurveyList from "./components/surveys/SurveyList";
 import CreateSurvey from "./components/surveys/CreateSurvey";
 import SurveyDetails from "./components/surveys/SurveyDetails";
-
-
-
-
-
+import Chat from "./components/screens/Chat";
 
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
@@ -63,11 +58,15 @@ const MyTab = () => {
               variant = focused ? "Bold" : "Outline";
               icon = <Home2 color={color} size={size} />;
               break;
+            case "Chat":
+              variant = focused ? "Bold" : "Outline";
+              icon = <Profile2User color={color} size={size} />;
+              break;
             case "Profile":
               variant = focused ? "Bold" : "Outline";
               icon = <Profile2User color={color} size={size} />;
               break;
-            case "Notification":
+            case "Invitation":
               variant = focused ? "Bold" : "Outline";
               icon = <Notification color={color} size={size} />;
               break;
@@ -82,8 +81,6 @@ const MyTab = () => {
               icon = <LoginCurve color={color} size={size} />;
               break;
 
-
-
             default:
               icon = <Home color={color} size={size} />;
           }
@@ -96,10 +93,11 @@ const MyTab = () => {
       })}
     >
       <Tab.Screen name="Post" component={Post} />
+      <Tab.Screen name="Chat" component={Chat} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen name="Setting" component={ProfileSettings} />
       <Tab.Screen name="Survey" component={SurveyStack} />
-      <Tab.Screen name="Notification" component={NotificationScreen} />
+      <Tab.Screen name="Invitation" component={NotificationScreen} />
       <Tab.Screen name="Logout" component={Logout} />
     </Tab.Navigator>
   );
@@ -118,13 +116,13 @@ const MyStack = () => {
       />
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
       <Stack.Screen name="CreateSurvey" component={CreateSurvey} />
-      
     </Stack.Navigator>
   );
 };
 
 const App = () => {
   const [user, dispatch] = useReducer(MyUserReducer, null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     checkUser(dispatch);
