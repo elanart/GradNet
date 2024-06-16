@@ -18,20 +18,20 @@ import {
   LoginCurve,
   Profile,
   Profile2User,
-
   Notification,
-
+  Triangle,
   Setting,
-
 } from "iconsax-react-native";
 import { checkUser } from "./configs/Utils";
 import Logout from "./components/users/Logout";
 import { PaperProvider } from "react-native-paper";
 
 import NotificationScreen from "./components/screens/NotificationScreen";
-
 import ProfileSettings from "./components/screens/ProfileSettings";
-
+import SurveyList from "./components/surveys/SurveyList";
+import CreateSurvey from "./components/surveys/CreateSurvey";
+import SurveyDetails from "./components/surveys/SurveyDetails";
+import SurveyResults from "./components/surveys/SurveyResults";
 
 const Stack = createStackNavigator();
 const Tab = createMaterialBottomTabNavigator();
@@ -40,7 +40,6 @@ const MyTab = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        // Thiết lập icon cho mỗi tab
         tabBarIcon: ({ focused, color, size }) => {
           let icon, variant;
 
@@ -53,20 +52,20 @@ const MyTab = () => {
               variant = focused ? "Bold" : "Outline";
               icon = <Profile2User color={color} size={size} />;
               break;
-
             case "Notification":
               variant = focused ? "Bold" : "Outline";
               icon = <Notification color={color} size={size} />;
-
+              break;
             case "Setting":
               variant = focused ? "Bold" : "Outline";
               icon = <Setting color={color} size={size} />;
-
+              break;
+            case "Survey":
+              icon = <Triangle color={color} size={size} />;
               break;
             case "Logout":
               icon = <LoginCurve color={color} size={size} />;
               break;
-            
             default:
               icon = <Home color={color} size={size} />;
           }
@@ -81,8 +80,9 @@ const MyTab = () => {
       <Tab.Screen name="Post" component={Post} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen name="Setting" component={ProfileSettings} />
-      <Tab.Screen name="Logout" component={Logout} />
+      <Tab.Screen name="Survey" component={SurveyList} />
       <Tab.Screen name="Notification" component={NotificationScreen} />
+      <Tab.Screen name="Logout" component={Logout} />
     </Tab.Navigator>
   );
 };
@@ -99,15 +99,16 @@ const MyStack = () => {
         options={{ headerShown: false }}
       />
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+      <Stack.Screen name="CreateSurvey" component={CreateSurvey} />
+      <Stack.Screen name="SurveyDetails" component={SurveyDetails} />
+      <Stack.Screen name="SurveyResults" component={SurveyResults} />
     </Stack.Navigator>
   );
 };
 
 const App = () => {
-  // Sử dụng useReducer để quản lý state của user
   const [user, dispatch] = useReducer(MyUserReducer, null);
 
-  // Kiểm tra user đã đăng nhập trước đó chưa ? dùng MyTab : dùng MyStack
   useEffect(() => {
     checkUser(dispatch);
   }, []);
@@ -115,7 +116,6 @@ const App = () => {
   return (
     <PaperProvider>
       <NavigationContainer>
-        {/* Chia sẻ state của user và dispatch function tới các component con */}
         <MyUserContext.Provider value={user}>
           <MyDispatcherContext.Provider value={dispatch}>
             {user ? <MyTab /> : <MyStack />}
